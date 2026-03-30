@@ -11,17 +11,54 @@ echo.
 
 rem 1) Check Python
 echo [1/4] Checking Python ...
-where python >nul 2>nul
-if errorlevel 1 (
+set "PYTHON_CMD="
+set "PYTHON_LABEL="
+set "PY_VER="
+
+python -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>nul
+if not errorlevel 1 (
+    set "PYTHON_CMD=python"
+    set "PYTHON_LABEL=python"
+)
+
+if not defined PYTHON_CMD (
+    where py >nul 2>nul
+    if not errorlevel 1 (
+        for %%v in (3.14 3.13 3.12 3.11 3.10) do (
+            if not defined PYTHON_CMD (
+                py -%%v -c "import sys" >nul 2>nul
+                if not errorlevel 1 (
+                    set "PYTHON_CMD=py -%%v"
+                    set "PYTHON_LABEL=py -%%v"
+                )
+            )
+        )
+    )
+)
+
+if not defined PYTHON_CMD (
     echo.
-    echo [ERROR] Python not found. Install Python 3.10+ and add it to PATH.
+    echo [ERROR] Python 3.10+ not found.
+    echo         Install Python 3.10+ and then re-run this script.
+    echo         Recommended command:
+    echo         winget install --id Python.Python.3.12
     echo         https://www.python.org/downloads/
     goto fail
 )
 
-for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set "PY_VER=%%v"
+for /f "delims=" %%v in ('call %PYTHON_CMD% --version 2^>^&1') do (
+    if not defined PY_VER set "PY_VER=%%v"
+)
+set "PY_VER=%PY_VER:Python =%"
+
+if not defined PY_VER (
+    echo.
+    echo [ERROR] Failed to query Python version from %PYTHON_LABEL%.
+    goto fail
+)
+
 echo         Python %PY_VER%
-python -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
+call %PYTHON_CMD% -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
 if errorlevel 1 (
     echo.
     echo [ERROR] Python 3.10 or newer is required.
@@ -36,7 +73,7 @@ if exist ".venv\Scripts\python.exe" (
     echo         .venv already exists ... skip
 ) else (
     echo         Creating .venv ...
-    python -m venv .venv
+    call %PYTHON_CMD% -m venv .venv
     if errorlevel 1 (
         echo.
         echo [ERROR] Failed to create .venv.
