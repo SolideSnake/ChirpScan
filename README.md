@@ -58,12 +58,19 @@ Then open:
 
 `http://127.0.0.1:8000`
 
-You can configure values, start/stop runtime, run test send, and view recent logs.
+You can use the local web console to:
+
+- manage monitor targets
+- edit include/exclude keyword rules
+- update monitor and push settings
+- start, stop, restart, and refresh runtime state
+- send a test notification
+- view recent logs
 
 ### Windows one-click scripts
 
-- `setup.bat`: 环境准备（创建 `.venv`、安装依赖），首次使用或依赖变更时双击运行一次即可
-- `start_web.bat`: 一键启动 Web UI（需先运行过 `setup.bat`）
+- `setup.bat`: prepares the environment by creating `.venv` and installing dependencies. Run this once before first use, or again after dependency changes.
+- `start_web.bat`: launches the local Web UI. Run `setup.bat` first if the environment is not ready.
 - `setup.bat` will also pre-create `.twikit_cookies.json` as a placeholder; real cookies are written after a successful twikit login.
 
 ## Environment Notes
@@ -72,4 +79,3 @@ You can configure values, start/stop runtime, run test send, and view recent log
 - Monitor targets now use `MONITOR_TARGETS` JSON, for example `[{\"username\":\"elonmusk\",\"enabled\":true}]`.
 - For real collection, set `TWITTER_PROVIDER=twikit` and provide Twikit login fields.
 - If Telegram token/chat is missing, notifier logs a warning and skips send.
-
