@@ -10,6 +10,7 @@ app = FastAPI(title="Tweet Monitor UI", version="0.1.0")
 manager = RuntimeManager()
 configure_logging("INFO")
 manager.load_saved_config()
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 @app.on_event("shutdown")
@@ -19,7 +20,22 @@ async def _shutdown_runtime() -> None:
 
 @app.get("/")
 async def index() -> FileResponse:
-    return FileResponse(Path(__file__).parent / "static" / "index.html")
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/favicon.svg")
+async def favicon_svg() -> FileResponse:
+    return FileResponse(STATIC_DIR / "favicon.svg", media_type="image/svg+xml")
+
+
+@app.get("/favicon.png")
+async def favicon_png() -> FileResponse:
+    return FileResponse(STATIC_DIR / "favicon.png", media_type="image/png")
+
+
+@app.get("/favicon.ico")
+async def favicon_ico() -> FileResponse:
+    return FileResponse(STATIC_DIR / "favicon.ico", media_type="image/x-icon")
 
 
 @app.get("/api/config")
@@ -70,4 +86,3 @@ async def restart_runtime() -> Dict[str, Any]:
 async def test_send() -> Dict[str, Any]:
     ok = await manager.test_send()
     return {"ok": ok}
-

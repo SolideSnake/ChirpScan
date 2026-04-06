@@ -1,0 +1,18 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="12" y1="8" x2="116" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#47B6FF"/>
+      <stop offset="1" stop-color="#1284DB"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <path d="M28 82C38 77 46 69 51 59C43 63 35 65 27 64C37 59 44 51 47 40C38 46 29 48 20 47C25 42 28 35 28 28C15 36 14 57 24 66C18 66 13 64 10 61C12 72 20 79 30 81C25 82 20 82 16 80C21 90 31 96 43 95C34 102 23 106 12 106C8 106 5 106 2 105C15 113 29 116 44 116C88 116 113 80 111 48C117 44 122 38 126 31C120 34 114 36 108 37C114 33 119 27 121 20C115 24 109 27 102 29C97 23 90 20 82 20C67 20 55 33 55 48C55 50 55 52 56 54C44 53 31 47 23 37C18 46 19 58 28 66V82Z" fill="white" fill-opacity="0.96"/>
+  <circle cx="65" cy="67" r="27" fill="#1E96E6" stroke="white" stroke-width="5"/>
+  <path d="M84 86L101 103" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M52 77L60 68L68 72L79 56" stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M52 80H79" stroke="white" stroke-opacity="0.32" stroke-width="3" stroke-linecap="round"/>
+  <path d="M52 54H79" stroke="white" stroke-opacity="0.26" stroke-width="3" stroke-linecap="round"/>
+  <path d="M57 52V78M66 52V78M75 52V78" stroke="white" stroke-opacity="0.2" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="79" cy="27" r="7" fill="white"/>
+  <circle cx="80.5" cy="27" r="2.5" fill="#1E96E6"/>
+</svg>

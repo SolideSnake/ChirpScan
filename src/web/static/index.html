@@ -1,1430 +1,316 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>X 监控</title>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png" type="image/png">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #07111f;
-      --panel: #0d1728;
-      --panel-2: #111d31;
-      --border: #20304b;
-      --text: #e6edf7;
-      --muted: #8ea2c7;
-      --accent: #31d0aa;
-      --accent-2: #57b5ff;
-      --danger: #ff6b81;
-      --warning: #ffb454;
-      --success: #32d583;
-      --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-      --radius: 18px;
-      --font-mono: "Consolas", "SFMono-Regular", "Courier New", monospace;
+      --bg: #08111d;
+      --panel: rgba(14, 26, 45, 0.94);
+      --border: #223553;
+      --border-soft: rgba(122, 162, 247, 0.16);
+      --text: #edf4ff;
+      --muted: #96a9ca;
+      --accent: #39d4ac;
+      --accent-2: #76b8ff;
+      --danger: #ff6f88;
+      --warning: #ffbc6d;
+      --success: #34d399;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --font-sans: "Segoe UI Variable", "Bahnschrift", "Microsoft YaHei UI", sans-serif;
+      --font-mono: "Cascadia Code", "Consolas", "SFMono-Regular", "Courier New", monospace;
     }
-
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+      font-family: var(--font-sans);
       background:
-        radial-gradient(circle at top, rgba(49, 208, 170, 0.12), transparent 28%),
-        radial-gradient(circle at right top, rgba(87, 181, 255, 0.12), transparent 25%),
-        var(--bg);
+        radial-gradient(circle at 15% 15%, rgba(57, 212, 172, 0.12), transparent 24%),
+        radial-gradient(circle at 90% 10%, rgba(118, 184, 255, 0.14), transparent 22%),
+        linear-gradient(180deg, #0b1525 0%, #08111d 100%);
       color: var(--text);
+      line-height: 1.5;
     }
-
-    button, input, select, textarea {
-      font: inherit;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(122, 162, 247, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(122, 162, 247, 0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 88%);
     }
-
-    .shell {
-      width: min(1320px, calc(100% - 32px));
-      margin: 28px auto 40px;
+    button, input, select, textarea { font: inherit; }
+    button { appearance: none; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(118, 184, 255, 0.36);
+      outline-offset: 2px;
     }
-
+    .shell { position: relative; width: min(1360px, calc(100% - 32px)); margin: 28px auto 44px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .card {
+      background: linear-gradient(180deg, rgba(16, 28, 46, 0.98), rgba(9, 17, 30, 0.96)), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
     .hero {
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-      margin-bottom: 18px;
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-size: 30px;
-      letter-spacing: 0.02em;
-    }
-
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      max-width: 720px;
-      line-height: 1.5;
-    }
-
-    .hint {
-      margin-top: 14px;
-      display: inline-flex;
+      justify-content: flex-end;
       align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(13, 23, 40, 0.86);
-      color: var(--muted);
-      font-size: 13px;
+      margin-bottom: 20px;
     }
-
-    .hint::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-2);
-      box-shadow: 0 0 12px rgba(87, 181, 255, 0.75);
-    }
-
-    .hint.is-success::before { background: var(--success); box-shadow: 0 0 12px rgba(50, 213, 131, 0.8); }
-    .hint.is-error::before { background: var(--danger); box-shadow: 0 0 12px rgba(255, 107, 129, 0.8); }
-    .hint.is-warning::before { background: var(--warning); box-shadow: 0 0 12px rgba(255, 180, 84, 0.8); }
-
-    .toolbar, .row-actions, .tab-list, .log-tools, .target-tools, .secret-row {
+    .hero-toolbar-buttons {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
     }
-
+    .hero-toolbar-buttons .button {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .hint {
+      display: inline-flex; align-items: center; gap: 10px; max-width: 100%; width: fit-content; padding: 0;
+      border: 0; background: transparent; color: var(--muted); font-size: 13px;
+    }
+    .hint::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px rgba(118, 184, 255, 0.7); }
+    .hint.is-success::before { background: var(--success); box-shadow: 0 0 12px rgba(52, 211, 153, 0.78); }
+    .hint.is-warning::before { background: var(--warning); box-shadow: 0 0 12px rgba(255, 188, 109, 0.78); }
+    .hint.is-error::before { background: var(--danger); box-shadow: 0 0 12px rgba(255, 111, 136, 0.8); }
+    .toolbar, .row-actions, .tab-list, .log-tools, .secret-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .button {
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: 160ms ease;
+      min-height: 42px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.03);
+      color: var(--text); cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
       backdrop-filter: blur(8px);
     }
-
-    .button:hover {
-      border-color: rgba(87, 181, 255, 0.45);
-      background: rgba(87, 181, 255, 0.08);
-      transform: translateY(-1px);
-    }
-
-    .button.is-primary {
-      border-color: rgba(49, 208, 170, 0.45);
-      background: rgba(49, 208, 170, 0.08);
-      color: #d8fff5;
-    }
-
-    .button.is-warning {
-      border-color: rgba(255, 180, 84, 0.45);
-      background: rgba(255, 180, 84, 0.08);
-      color: #ffe4bc;
-    }
-
-    .button.is-danger {
-      border-color: rgba(255, 107, 129, 0.45);
-      background: rgba(255, 107, 129, 0.08);
-      color: #ffd6de;
-    }
-
-    .button.is-warning:hover {
-      border-color: rgba(255, 180, 84, 0.65);
-      background: rgba(255, 180, 84, 0.14);
-    }
-
-    .button.restart-button {
-      position: relative;
-      box-shadow: 0 0 0 rgba(255, 180, 84, 0);
-    }
-
-    .button.restart-button.needs-attention {
-      border-color: rgba(255, 180, 84, 0.9);
-      background: linear-gradient(180deg, rgba(255, 180, 84, 0.22), rgba(255, 180, 84, 0.12));
-      color: #fff3dd;
-      box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.28), 0 0 26px rgba(255, 180, 84, 0.28);
-      animation: restartPulse 1.6s ease-in-out infinite;
-    }
-
-    @keyframes restartPulse {
-      0%, 100% {
-        box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.28), 0 0 18px rgba(255, 180, 84, 0.22);
-      }
-      50% {
-        box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.38), 0 0 30px rgba(255, 180, 84, 0.42);
-      }
-    }
-
-    .button.is-small {
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-    }
-
-    .button.is-tab {
-      background: transparent;
-      color: var(--muted);
-    }
-
-    .button.is-tab.active {
-      border-color: rgba(49, 208, 170, 0.45);
-      background: rgba(49, 208, 170, 0.08);
-      color: var(--text);
-    }
-
-    .card {
-      background: linear-gradient(180deg, rgba(17, 29, 49, 0.96), rgba(9, 16, 29, 0.96));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 18px;
-    }
-
-    .card h2, .card h3 {
-      margin: 0;
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-      margin-bottom: 16px;
-    }
-
-    .section-head p {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .kpi-grid {
+    .button:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.45); background: rgba(118, 184, 255, 0.09); }
+    .button.is-primary { color: #ddfff6; border-color: rgba(57, 212, 172, 0.45); background: rgba(57, 212, 172, 0.1); }
+    .button.is-warning { color: #fff0d7; border-color: rgba(255, 188, 109, 0.48); background: rgba(255, 188, 109, 0.1); }
+    .button.is-danger { color: #ffe1e7; border-color: rgba(255, 111, 136, 0.48); background: rgba(255, 111, 136, 0.1); }
+    .button.is-small { min-height: 36px; padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+    .button.is-tab { color: var(--muted); background: transparent; }
+    .button[aria-selected="true"] { color: var(--text); border-color: rgba(57, 212, 172, 0.45); background: rgba(57, 212, 172, 0.1); box-shadow: inset 0 0 0 1px rgba(57, 212, 172, 0.08); }
+    .button[disabled] { opacity: 0.62; cursor: not-allowed; transform: none; }
+    .button.restart-button.needs-attention { animation: restartPulse 1.8s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.22), 0 0 24px rgba(255, 188, 109, 0.24); }
+    @keyframes restartPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.18), 0 0 14px rgba(255, 188, 109, 0.16); } 50% { box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.3), 0 0 28px rgba(255, 188, 109, 0.36); } }
+    .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+    .section-head h2, .section-head h3 { margin: 0; }
+    .section-head p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .kpi-card { min-height: 118px; padding: 16px; border-radius: var(--radius-lg); border: 1px solid rgba(118, 184, 255, 0.14); background: rgba(4, 10, 20, 0.48); transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
+    .kpi-card:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.28); background: rgba(8, 15, 27, 0.76); }
+    .kpi-label { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .kpi-value { margin-top: 12px; font-size: 28px; font-weight: 700; line-height: 1.12; }
+    .kpi-sub { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.4; word-break: break-word; }
+    .status-live { display: inline-flex; align-items: center; gap: 10px; }
+    .status-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 12px rgba(255, 111, 136, 0.72); }
+    .status-dot.running { background: var(--success); box-shadow: 0 0 14px rgba(52, 211, 153, 0.85); animation: pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(0.92); opacity: 0.76; } 50% { transform: scale(1.12); opacity: 1; } }
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: 16px; margin-bottom: 16px; }
+    .stack-card { padding: 18px; }
+    .add-target { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+    .target-list { display: flex; flex-direction: column; gap: 10px; max-height: 560px; overflow: auto; padding-right: 2px; }
+    .target-row { display: flex; flex-direction: column; gap: 14px; padding: 14px; border-radius: 16px; border: 1px solid rgba(118, 184, 255, 0.12); background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018)); transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
+    .target-row:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.26); background: linear-gradient(180deg, rgba(118, 184, 255, 0.08), rgba(255, 255, 255, 0.018)); }
+    .target-main { display: grid; grid-template-columns: minmax(0, 1.35fr) auto auto auto; gap: 14px; align-items: center; }
+    .target-name { font-size: 16px; font-weight: 600; line-height: 1.35; word-break: break-word; }
+    .target-meta { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .status-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 88px; padding: 8px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .status-badge.success { color: #b8ffe0; border-color: rgba(52, 211, 153, 0.32); background: rgba(52, 211, 153, 0.12); }
+    .status-badge.error { color: #ffd6de; border-color: rgba(255, 111, 136, 0.32); background: rgba(255, 111, 136, 0.12); }
+    .status-badge.paused { color: #ffe3ba; border-color: rgba(255, 188, 109, 0.3); background: rgba(255, 188, 109, 0.12); }
+    .status-badge.idle { color: #d1dcf0; border-color: rgba(209, 220, 240, 0.18); background: rgba(209, 220, 240, 0.06); }
+    .toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .toggle input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .empty-state { padding: 24px; text-align: center; color: var(--muted); border-radius: 16px; border: 1px dashed rgba(118, 184, 255, 0.18); background: rgba(255, 255, 255, 0.02); }
+    .tab-panel { display: none; margin-top: 16px; }
+    .tab-panel.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    label { display: block; margin-bottom: 6px; color: #d7e3f7; font-size: 13px; }
+    input, select, textarea { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(4, 10, 20, 0.56); color: var(--text); transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+    input::placeholder, textarea::placeholder { color: #677a9b; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(57, 212, 172, 0.48); box-shadow: 0 0 0 3px rgba(57, 212, 172, 0.14); background: rgba(4, 10, 20, 0.7); }
+    textarea { min-height: 92px; resize: vertical; }
+    .target-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .keyword-composer {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .kpi-card {
-      background: rgba(4, 10, 20, 0.46);
-      border: 1px solid rgba(87, 181, 255, 0.14);
-      border-radius: 16px;
-      padding: 16px;
-      min-height: 112px;
-    }
-
-    .kpi-label {
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .kpi-value {
-      margin-top: 12px;
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 1.15;
-    }
-
-    .kpi-sub {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .status-live {
-      display: inline-flex;
-      align-items: center;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 10px;
-    }
-
-    .status-dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: var(--danger);
-      box-shadow: 0 0 12px rgba(255, 107, 129, 0.72);
-    }
-
-    .status-dot.running {
-      background: var(--success);
-      box-shadow: 0 0 14px rgba(50, 213, 131, 0.85);
-      animation: pulse 1.8s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(0.92); opacity: 0.75; }
-      50% { transform: scale(1.12); opacity: 1; }
-    }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .add-target {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .target-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 560px;
-      overflow: auto;
-    }
-
-    .target-row {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 14px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(87, 181, 255, 0.1);
-      border-radius: 14px;
-    }
-
-    .target-main {
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) auto auto auto;
-      gap: 14px;
       align-items: center;
     }
-
-    .target-name {
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.35;
-      word-break: break-word;
-    }
-
-    .target-meta {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .status-badge {
+    .keyword-composer .button { min-height: 44px; }
+    .rule-preview { margin-top: 2px; padding: 14px; border-radius: 14px; border: 1px solid rgba(57, 212, 172, 0.16); background: linear-gradient(180deg, rgba(57, 212, 172, 0.08), rgba(118, 184, 255, 0.04)), rgba(4, 10, 20, 0.58); }
+    .rule-preview-title { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: #ddfff6; }
+    .rule-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .rule-preview-block { min-width: 0; }
+    .rule-preview-label { margin-bottom: 8px; color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .rule-preview-empty { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .rule-preview-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .rule-tag { display: inline-flex; align-items: center; max-width: 100%; padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(118, 184, 255, 0.2); background: rgba(118, 184, 255, 0.1); color: #dcecff; font-size: 12px; line-height: 1.35; word-break: break-word; }
+    .rule-tag.exclude { border-color: rgba(255, 111, 136, 0.22); background: rgba(255, 111, 136, 0.1); color: #ffd7de; }
+    .rule-tag-text { display: inline-flex; align-items: center; }
+    .rule-tag-remove {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 88px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .status-badge.success { color: #b8ffe0; border-color: rgba(50, 213, 131, 0.32); background: rgba(50, 213, 131, 0.12); }
-    .status-badge.error { color: #ffd6de; border-color: rgba(255, 107, 129, 0.32); background: rgba(255, 107, 129, 0.12); }
-    .status-badge.paused { color: #ffe3ba; border-color: rgba(255, 180, 84, 0.3); background: rgba(255, 180, 84, 0.12); }
-    .status-badge.idle { color: #c6d3e8; border-color: rgba(198, 211, 232, 0.18); background: rgba(198, 211, 232, 0.06); }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .toggle input {
       width: 18px;
       height: 18px;
-      accent-color: var(--accent);
+      margin-left: 8px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      color: currentColor;
       cursor: pointer;
-    }
-
-    .empty-state {
-      padding: 22px;
-      border: 1px dashed rgba(87, 181, 255, 0.18);
-      border-radius: 14px;
-      color: var(--muted);
-      text-align: center;
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .tab-panel {
-      display: none;
-      margin-top: 16px;
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      color: #d0dbef;
-      font-size: 13px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(4, 10, 20, 0.5);
-      color: var(--text);
-      padding: 11px 12px;
-      outline: none;
-      transition: 160ms ease;
-    }
-
-    input::placeholder, textarea::placeholder {
-      color: #61728f;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: rgba(49, 208, 170, 0.48);
-      box-shadow: 0 0 0 3px rgba(49, 208, 170, 0.13);
-    }
-
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    .target-filters {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .rule-preview {
-      margin-top: 12px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(49, 208, 170, 0.16);
-      background:
-        linear-gradient(180deg, rgba(49, 208, 170, 0.08), rgba(87, 181, 255, 0.04)),
-        rgba(4, 10, 20, 0.58);
-    }
-
-    .rule-preview-title {
-      margin: 0 0 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #d9fff5;
-    }
-
-    .rule-preview-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .rule-preview-block {
-      min-width: 0;
-    }
-
-    .rule-preview-label {
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .rule-preview-empty {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .rule-preview-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .rule-tag {
-      display: inline-flex;
-      align-items: center;
-      max-width: 100%;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(87, 181, 255, 0.2);
-      background: rgba(87, 181, 255, 0.1);
-      color: #dbeafe;
-      font-size: 12px;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .rule-tag.exclude {
-      border-color: rgba(255, 107, 129, 0.22);
-      background: rgba(255, 107, 129, 0.1);
-      color: #ffd7de;
-    }
-
-    .rule-preview-footnote {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .save-row {
-      margin-top: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logs {
-      height: 360px;
-      overflow: auto;
-      border-radius: 16px;
-      border: 1px solid rgba(87, 181, 255, 0.12);
-      background: rgba(4, 10, 20, 0.72);
-      padding: 10px;
-      font-family: var(--font-mono);
+      padding: 0;
+      line-height: 1;
       font-size: 12px;
     }
-
-    .log-row {
-      display: grid;
-      grid-template-columns: 180px 90px 170px minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: start;
-      padding: 6px 8px;
-      border-radius: 10px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .log-row + .log-row {
-      margin-top: 2px;
-    }
-
-    .log-row:hover {
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .log-time, .log-source {
-      color: #8ba2ca;
-    }
-
-    .log-level {
-      font-weight: 700;
-      letter-spacing: 0.06em;
-    }
-
+    .rule-preview-footnote { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .save-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+    .save-status { min-height: 20px; color: var(--muted); font-size: 13px; }
+    .logs { height: 360px; overflow: auto; border-radius: 16px; border: 1px solid rgba(118, 184, 255, 0.12); background: rgba(4, 10, 20, 0.74); padding: 10px; font-family: var(--font-mono); font-size: 12px; }
+    .log-row { display: grid; grid-template-columns: 180px 90px 170px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 6px 8px; border-radius: 10px; white-space: pre-wrap; word-break: break-word; }
+    .log-row + .log-row { margin-top: 2px; }
+    .log-row:hover { background: rgba(255, 255, 255, 0.03); }
+    .log-time, .log-source { color: #93aad1; }
+    .log-level { font-weight: 700; letter-spacing: 0.06em; }
     .log-level.info { color: var(--success); }
     .log-level.warning { color: var(--warning); }
     .log-level.error, .log-level.critical { color: var(--danger); }
     .log-level.debug { color: var(--accent-2); }
-
-    .log-actions {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .log-copy {
-      min-width: 58px;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
+    .log-actions { display: flex; justify-content: flex-end; }
+    .log-copy { min-width: 58px; }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
     @media (max-width: 1100px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-toolbar-buttons { flex-wrap: wrap; }
       .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .main-grid { grid-template-columns: 1fr; }
     }
-
+    @media (max-width: 900px) { .target-main { grid-template-columns: minmax(0, 1fr) auto; } }
     @media (max-width: 760px) {
       .shell { width: min(100% - 20px, 100%); }
-      .hero { flex-direction: column; }
-      .grid, .target-main, .target-filters, .rule-preview-grid, .log-row, .add-target {
-        grid-template-columns: 1fr;
-      }
-      .save-row, .section-head {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+      .hero { padding: 16px; }
+      .grid, .target-main, .target-filters, .rule-preview-grid, .log-row, .add-target, .keyword-composer { grid-template-columns: 1fr; }
+      .hero-toolbar-buttons { flex-direction: column; }
+      .hero-toolbar-buttons .button, .save-row .button { width: 100%; }
+      .save-row, .section-head { flex-direction: column; align-items: flex-start; }
       .kpi-grid { grid-template-columns: 1fr; }
     }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition-duration: 0s !important; } }
   </style>
 </head>
 <body>
   <div class="shell">
-    <section class="hero">
-      <div>
-        <h1>X 监控</h1>
-        <div id="hint" class="hint">正在获取状态...</div>
+    <div class="hero">
+      <div class="hero-toolbar-buttons" aria-label="操作区">
+        <button class="button is-primary" type="button" onclick="startRuntime()">启动</button>
+        <button class="button is-danger" type="button" onclick="stopRuntime()">停止</button>
+        <button id="restartRuntimeButton" class="button is-warning restart-button" type="button" onclick="restartRuntime()">重启</button>
+        <button class="button" type="button" onclick="refreshAll()">刷新</button>
+        <button class="button" type="button" onclick="testSend()">测试</button>
       </div>
-      <div class="toolbar">
-        <button class="button is-primary" onclick="startRuntime()">启动监控</button>
-        <button id="restartRuntimeButton" class="button is-warning restart-button" onclick="restartRuntime()">重启监控</button>
-        <button class="button is-danger" onclick="stopRuntime()">停止监控</button>
-        <button class="button" onclick="testSend()">测试发送</button>
-        <button class="button" onclick="refreshAll()">刷新状态</button>
-      </div>
-    </section>
-
-    <section id="statusCards" class="kpi-grid"></section>
-
-    <section class="main-grid">
-      <div class="card">
-        <div class="section-head">
-          <div>
-            <h2>监控目标</h2>
-            <p>每个目标独立管理，可单独暂停或恢复，也可以单独配置推送包含词和排除词。</p>
+    </div>
+    <section id="statusCards" class="kpi-grid" aria-live="polite"></section>
+    <main>
+      <section class="main-grid">
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>目标</h2></div><div id="targetSummary" class="muted">0 个目标</div></div>
+          <div class="add-target"><div><label class="sr-only" for="new_target_username">新增监控目标</label><input id="new_target_username" placeholder="输入 X 用户名，例如 elonmusk" autocomplete="off"></div><button class="button is-primary" type="button" onclick="addTarget()">新增目标</button></div>
+          <div id="targetList" class="target-list"></div>
+        </div>
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>设置</h2></div></div>
+          <div class="tab-list" role="tablist" aria-label="配置分类">
+            <button id="tab-rules" class="button is-tab active" type="button" role="tab" aria-selected="true" aria-controls="panel-rules" tabindex="0" data-tab="rules">监控</button>
+            <button id="tab-push" class="button is-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-push" tabindex="-1" data-tab="push">推送</button>
           </div>
-          <div id="targetSummary" class="muted">0 个目标</div>
-        </div>
-        <div class="add-target">
-          <input id="new_target_username" placeholder="输入 X 用户名，例如 elonmusk">
-          <button class="button is-primary" onclick="addTarget()">新增目标</button>
-        </div>
-        <div id="targetList" class="target-list"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-head">
-          <div>
-            <h2>配置中心</h2>
-          </div>
-        </div>
-
-        <div class="tab-list">
-          <button class="button is-tab active" data-tab="rules">监控设置</button>
-          <button class="button is-tab" data-tab="push">推送设置</button>
-        </div>
-
-        <div class="tab-panel active" data-panel="rules">
-          <div class="grid">
-            <div>
-              <label for="twitter_provider">推文来源</label>
-              <select id="twitter_provider">
-                <option value="mock">本地测试</option>
-                <option value="twikit">真实抓取</option>
-              </select>
-            </div>
-            <div>
-              <label for="twitter_poll_interval_sec">轮询间隔（秒）</label>
-              <input id="twitter_poll_interval_sec" type="number" min="10">
-            </div>
-            <div>
-              <label for="twitter_fetch_limit">每次抓取条数</label>
-              <input id="twitter_fetch_limit" type="number" min="1">
-            </div>
-            <div>
-              <label for="twitter_bootstrap_drop_existing">首次启动跳过历史推文</label>
-              <select id="twitter_bootstrap_drop_existing">
-                <option value="true">是</option>
-                <option value="false">否</option>
-              </select>
-            </div>
-            <div>
-              <label for="twikit_username">X 用户名</label>
-              <input id="twikit_username">
-            </div>
-            <div>
-              <label for="twikit_email">X 邮箱（可选）</label>
-              <input id="twikit_email">
-            </div>
-            <div>
-              <label for="twikit_password">X 密码</label>
-              <div class="secret-row">
-                <input id="twikit_password" type="password" autocomplete="off">
-                <button class="button is-small" type="button" data-toggle-secret="twikit_password">显示</button>
-              </div>
-            </div>
-            <div>
-              <label for="twikit_cookies_file">X Cookies 文件</label>
-              <input id="twikit_cookies_file">
+          <div id="panel-rules" class="tab-panel active" data-panel="rules" role="tabpanel" aria-labelledby="tab-rules">
+            <div class="grid">
+              <div><label for="twitter_provider">推文来源</label><select id="twitter_provider"><option value="mock">本地测试</option><option value="twikit">真实抓取</option></select></div>
+              <div><label for="twitter_poll_interval_sec">轮询间隔（秒）</label><input id="twitter_poll_interval_sec" type="number" min="10" inputmode="numeric"></div>
+              <div><label for="twitter_fetch_limit">每次抓取条数</label><input id="twitter_fetch_limit" type="number" min="1" inputmode="numeric"></div>
+              <div><label for="twitter_bootstrap_drop_existing">首次启动跳过历史推文</label><select id="twitter_bootstrap_drop_existing"><option value="true">是</option><option value="false">否</option></select></div>
+              <div><label for="twikit_username">X 用户名</label><input id="twikit_username" autocomplete="username"></div>
+              <div><label for="twikit_email">X 邮箱（可选）</label><input id="twikit_email" type="email" autocomplete="email"></div>
+              <div><label for="twikit_password">X 密码</label><div class="secret-row"><input id="twikit_password" type="password" autocomplete="current-password"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="twikit_password">显示</button></div></div>
+              <div><label for="twikit_cookies_file">X Cookies 文件</label><input id="twikit_cookies_file"></div>
             </div>
           </div>
-        </div>
-
-        <div class="tab-panel" data-panel="push">
-          <div class="grid">
-            <div>
-              <label for="telegram_bot_token">Telegram Bot Token</label>
-              <div class="secret-row">
-                <input id="telegram_bot_token" type="password" autocomplete="off">
-                <button class="button is-small" type="button" data-toggle-secret="telegram_bot_token">显示</button>
-              </div>
-            </div>
-            <div>
-              <label for="telegram_chat_id">Telegram Chat ID</label>
-              <div class="secret-row">
-                <input id="telegram_chat_id" type="password" autocomplete="off">
-                <button class="button is-small" type="button" data-toggle-secret="telegram_chat_id">显示</button>
-              </div>
-            </div>
-            <div>
-              <label for="dry_run">推送</label>
-              <select id="dry_run">
-                <option value="false">是</option>
-                <option value="true">否</option>
-              </select>
+          <div id="panel-push" class="tab-panel" data-panel="push" role="tabpanel" aria-labelledby="tab-push" hidden>
+            <div class="grid">
+              <div><label for="telegram_bot_token">Telegram Bot Token</label><div class="secret-row"><input id="telegram_bot_token" type="password" autocomplete="off"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="telegram_bot_token">显示</button></div></div>
+              <div><label for="telegram_chat_id">Telegram Chat ID</label><div class="secret-row"><input id="telegram_chat_id" type="password" autocomplete="off"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="telegram_chat_id">显示</button></div></div>
+              <div><label for="dry_run">推送模式</label><select id="dry_run"><option value="false">正式推送</option><option value="true">仅演练，不发送</option></select></div>
             </div>
           </div>
+          <div class="save-row"><button id="saveConfigButton" class="button is-primary" type="button" onclick="saveConfig()">保存配置</button><div id="saveStatus" class="save-status" role="status" aria-live="polite"></div></div>
         </div>
-
-        <div class="save-row">
-          <button id="saveConfigButton" class="button is-primary" onclick="saveConfig()">保存配置</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-head">
-        <div>
-          <h2>日志终端</h2>
-          <p>按级别着色显示，支持自动滚动锁定和一键清空，方便持续观察抓取与推送链路。</p>
-        </div>
-        <div class="log-tools">
-          <label class="toggle">
-            <input id="autoScroll" type="checkbox" checked>
-            自动滚动到底部
-          </label>
-          <button class="button" onclick="refreshAll()">刷新日志</button>
-          <button class="button is-danger" onclick="clearLogs()">清空日志</button>
-        </div>
-      </div>
-      <div id="logs" class="logs"></div>
-    </section>
+      </section>
+      <section class="card stack-card" aria-labelledby="logsTitle">
+        <div class="section-head"><div><h2 id="logsTitle">日志终端</h2></div><div class="log-tools"><label class="toggle"><input id="autoScroll" type="checkbox" checked>自动滚动到底部</label><button class="button" type="button" onclick="refreshAll()">刷新日志</button><button class="button is-danger" type="button" onclick="clearLogs()">清空日志</button></div></div>
+        <div id="logs" class="logs" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      </section>
+    </main>
   </div>
-
   <script>
-    const fields = [
-      "twitter_provider",
-      "twitter_poll_interval_sec",
-      "twitter_fetch_limit",
-      "twitter_bootstrap_drop_existing",
-      "dry_run",
-      "telegram_bot_token",
-      "telegram_chat_id",
-      "twikit_username",
-      "twikit_email",
-      "twikit_password",
-      "twikit_cookies_file"
-    ];
-
-    let monitorTargets = [];
-    let targetRuntimeState = {};
-    let refreshTimer = null;
-    let keywordAutoSaveTimer = null;
-    let keywordAutoSaveSeq = 0;
-    let currentRuntimeRunning = false;
-    let restartAttention = false;
-
-    async function api(path, method = "GET", body = null) {
-      const resp = await fetch(path, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: body ? JSON.stringify(body) : null
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.detail || "request failed");
-      return data;
-    }
-
-    function setHint(message, tone = "info") {
-      const hint = document.getElementById("hint");
-      hint.textContent = message;
-      hint.className = `hint ${tone === "success" ? "is-success" : tone === "error" ? "is-error" : tone === "warning" ? "is-warning" : ""}`.trim();
-    }
-
-    function syncHintWithRuntime(data, force = false) {
-      const hint = document.getElementById("hint");
-      if (!hint) return;
-      const currentText = hint.textContent || "";
-      const nextText = data.running ? "监控运行中" : "监控未启动";
-      const nextTone = data.running ? "success" : "warning";
-      const isInitialHint = currentText === "状态加载中..." || currentText === "正在获取状态...";
-      if (force || isInitialHint) {
-        setHint(nextText, nextTone);
-      }
-    }
-
-    function setSaveStatus(message) {
-      const saveStatus = document.getElementById("saveStatus");
-      if (saveStatus) {
-        saveStatus.textContent = message;
-      }
-    }
-
-    function setSaveButtonBusy(isBusy) {
-      const button = document.getElementById("saveConfigButton");
-      if (!button) return;
-      button.disabled = isBusy;
-      button.textContent = isBusy ? "保存中..." : "保存配置";
-      button.style.opacity = isBusy ? "0.7" : "1";
-      button.style.cursor = isBusy ? "wait" : "pointer";
-    }
-
-    function updateRestartButtonState() {
-      const button = document.getElementById("restartRuntimeButton");
-      if (!button) return;
-      const needsAttention = currentRuntimeRunning && restartAttention;
-      button.classList.toggle("needs-attention", needsAttention);
-      button.textContent = "重启监控";
-      button.title = needsAttention ? "配置已保存，点击这里重启监控" : "重新启动当前监控实例";
-    }
-
-    function markRestartRequired() {
-      restartAttention = true;
-      updateRestartButtonState();
-    }
-
-    function buildMonitorTargetsPayload() {
-      return {
-        monitor_targets: normalizeTargets(monitorTargets)
-      };
-    }
-
-    function formatTime(value) {
-      if (!value) return "暂无";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleString("zh-CN", { hour12: false });
-    }
-
-    function normalizeFilterExpression(raw) {
-      const text = Array.isArray(raw) ? raw.join(",") : String(raw || "");
-      const clauses = [];
-      for (const clause of text.replace(/\r/g, "\n").replace(/\n/g, ",").split(",")) {
-        const parts = clause
-          .split("+")
-          .map((part) => String(part || "").trim())
-          .filter(Boolean);
-        if (!parts.length) continue;
-        clauses.push(parts.join("+"));
-      }
-      return clauses.join(",");
-    }
-
-    function parseFilterClauses(raw) {
-      const normalized = normalizeFilterExpression(raw);
-      if (!normalized) return [];
-      return normalized
-        .split(",")
-        .map((clause) => clause.split("+").map((part) => part.trim()).filter(Boolean))
-        .filter((parts) => parts.length);
-    }
-
-    function createRulePreviewBlock(labelText, clauses, emptyText, tone = "include") {
-      const block = document.createElement("div");
-      block.className = "rule-preview-block";
-
-      const label = document.createElement("div");
-      label.className = "rule-preview-label";
-      label.textContent = labelText;
-      block.appendChild(label);
-
-      if (!clauses.length) {
-        const empty = document.createElement("div");
-        empty.className = "rule-preview-empty";
-        empty.textContent = emptyText;
-        block.appendChild(empty);
-        return block;
-      }
-
-      const tags = document.createElement("div");
-      tags.className = "rule-preview-tags";
-      for (const parts of clauses) {
-        const tag = document.createElement("div");
-        tag.className = `rule-tag${tone === "exclude" ? " exclude" : ""}`;
-        tag.textContent = parts.length > 1 ? parts.join(" + ") : parts[0];
-        tags.appendChild(tag);
-      }
-      block.appendChild(tags);
-      return block;
-    }
-
-    function createRulePreview(target) {
-      const includeClauses = parseFilterClauses(target.include_keywords);
-      const excludeClauses = parseFilterClauses(target.exclude_keywords);
-
-      const preview = document.createElement("div");
-      preview.className = "rule-preview";
-
-      const title = document.createElement("div");
-      title.className = "rule-preview-title";
-      title.textContent = "当前遵循的规则";
-      preview.appendChild(title);
-
-      const grid = document.createElement("div");
-      grid.className = "rule-preview-grid";
-      grid.append(
-        createRulePreviewBlock(
-          "放行条件",
-          includeClauses,
-          "未设置包含关键词时，将匹配该目标的全部推文。",
-          "include"
-        ),
-        createRulePreviewBlock(
-          "拦截条件",
-          excludeClauses,
-          "未设置排除关键词时，不会额外拦截推文。",
-          "exclude"
-        )
-      );
-      preview.appendChild(grid);
-
-      const footnote = document.createElement("div");
-      footnote.className = "rule-preview-footnote";
-      footnote.textContent = "规则说明：英文逗号表示“或”，加号 + 表示“且”。系统会先判断是否命中放行条件，再排除命中拦截条件的内容。";
-      preview.appendChild(footnote);
-
-      return preview;
-    }
-
-    function refreshRulePreview(preview, target) {
-      const nextPreview = createRulePreview(target);
-      preview.replaceWith(nextPreview);
-      return nextPreview;
-    }
-
-    function normalizeTargets(rawTargets) {
-      const seen = new Set();
-      const targets = [];
-      for (const item of Array.isArray(rawTargets) ? rawTargets : []) {
-        const username = String(item.username || "").trim();
-        if (!username) continue;
-        const key = username.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        targets.push({
-          username,
-          enabled: item.enabled !== false,
-          include_keywords: normalizeFilterExpression(item.include_keywords),
-          exclude_keywords: normalizeFilterExpression(item.exclude_keywords)
-        });
-      }
-      return targets;
-    }
-
-    async function copyText(text) {
-      const value = String(text || "");
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(value);
-        return;
-      }
-
-      const helper = document.createElement("textarea");
-      helper.value = value;
-      helper.setAttribute("readonly", "readonly");
-      helper.style.position = "fixed";
-      helper.style.opacity = "0";
-      document.body.appendChild(helper);
-      helper.focus();
-      helper.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(helper);
-      if (!ok) {
-        throw new Error("浏览器不支持剪贴板复制");
-      }
-    }
-
-    function scheduleKeywordAutoSave(username, kind) {
-      if (keywordAutoSaveTimer) {
-        clearTimeout(keywordAutoSaveTimer);
-      }
-      setSaveStatus(`@${username} 的${kind}关键词修改后将自动保存...`);
-      keywordAutoSaveTimer = setTimeout(() => {
-        void autoSaveKeywordFilters(username, kind);
-      }, 800);
-    }
-
-    async function autoSaveKeywordFilters(username, kind) {
-      const requestId = ++keywordAutoSaveSeq;
-      try {
-        await api("/api/config", "POST", buildMonitorTargetsPayload());
-        if (requestId !== keywordAutoSaveSeq) return;
-        const nowText = new Date().toLocaleTimeString("zh-CN", { hour12: false });
-        if (currentRuntimeRunning) {
-          markRestartRequired();
-          setHint("关键词已自动保存，顶部“重启监控”按钮已高亮，点击后生效。", "success");
-        } else {
-          setHint("关键词已自动保存。监控下次启动时会加载新配置。", "success");
-        }
-        setSaveStatus(`@${username} 的${kind}关键词已自动保存，时间 ${nowText}`);
-      } catch (err) {
-        if (requestId !== keywordAutoSaveSeq) return;
-        setHint(err.message || "关键词自动保存失败", "error");
-        setSaveStatus(`@${username} 的${kind}关键词自动保存失败：${err.message || "未知错误"}`);
-      }
-    }
-
-    function isEditingTargetInputs() {
-      const active = document.activeElement;
-      if (!active) return false;
-      if (active.id === "new_target_username") return true;
-
-      const targetList = document.getElementById("targetList");
-      if (!targetList || !targetList.contains(active)) return false;
-      return active.tagName === "TEXTAREA" || active.tagName === "INPUT" || active.tagName === "SELECT";
-    }
-
-    function syncRuntimeTargets(items) {
-      const nextState = {};
-      for (const item of Array.isArray(items) ? items : []) {
-        nextState[String(item.username || "").toLowerCase()] = item;
-      }
-      targetRuntimeState = nextState;
-    }
-
-    function renderStatus(data) {
-      currentRuntimeRunning = Boolean(data.running);
-      updateRestartButtonState();
-      syncHintWithRuntime(data);
-      const statusCards = document.getElementById("statusCards");
-      const cards = [
-        {
-          label: "运行状态",
-          value: data.running ? "运行中" : "已停止",
-          sub: data.running ? "实例正在持续轮询抓取" : "当前未执行轮询任务",
-          live: true
-        },
-        {
-          label: "已采集",
-          value: String(data.collected_count || 0),
-          sub: "累计进入处理链路的推文数"
-        },
-        {
-          label: "已发送",
-          value: String(data.sent_count || 0),
-          sub: "累计成功推送到 Telegram"
-        },
-        {
-          label: "失败数",
-          value: String(data.failed_count || 0),
-          sub: data.last_error ? `最近错误：${data.last_error}` : "当前没有新的错误摘要"
-        },
-        {
-          label: "最近轮询",
-          value: formatTime(data.last_loop_at),
-          sub: data.started_at ? `启动于 ${formatTime(data.started_at)}` : "尚未启动"
-        }
-      ];
-
-      statusCards.innerHTML = "";
-      for (const card of cards) {
-        const el = document.createElement("div");
-        el.className = "kpi-card";
-
-        const label = document.createElement("div");
-        label.className = "kpi-label";
-        label.textContent = card.label;
-        el.appendChild(label);
-
-        const value = document.createElement("div");
-        value.className = "kpi-value";
-        if (card.live) {
-          const live = document.createElement("div");
-          live.className = "status-live";
-          const dot = document.createElement("span");
-          dot.className = `status-dot ${data.running ? "running" : ""}`.trim();
-          const text = document.createElement("span");
-          text.textContent = card.value;
-          live.append(dot, text);
-          value.appendChild(live);
-        } else {
-          value.textContent = card.value;
-        }
-        el.appendChild(value);
-
-        const sub = document.createElement("div");
-        sub.className = "kpi-sub";
-        sub.textContent = card.sub;
-        el.appendChild(sub);
-
-        statusCards.appendChild(el);
-      }
-    }
-
-    function renderTargetList() {
-      const targetList = document.getElementById("targetList");
-      const targetSummary = document.getElementById("targetSummary");
-      const enabledCount = monitorTargets.filter((item) => item.enabled).length;
-      targetSummary.textContent = `${monitorTargets.length} 个目标 / ${enabledCount} 个启用中`;
-      targetList.innerHTML = "";
-
-      if (!monitorTargets.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "还没有监控目标。新增一个用户名后保存配置即可开始精细化管理。";
-        targetList.appendChild(empty);
-        return;
-      }
-
-      monitorTargets.forEach((target, index) => {
-        const runtime = targetRuntimeState[target.username.toLowerCase()] || {};
-        const row = document.createElement("div");
-        row.className = "target-row";
-
-        const main = document.createElement("div");
-        main.className = "target-main";
-
-        const meta = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "target-name";
-        title.textContent = `@${target.username}`;
-        const detail = document.createElement("div");
-        detail.className = "target-meta";
-        detail.textContent = runtime.last_error
-          ? `最近错误：${runtime.last_error}`
-          : `最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count || 0} 条`;
-        meta.append(title, detail);
-
-        const badge = document.createElement("div");
-        const status = !target.enabled ? "paused" : runtime.last_fetch_status || "idle";
-        badge.className = `status-badge ${status}`;
-        badge.textContent = status === "success"
-          ? "抓取成功"
-          : status === "error"
-            ? "抓取失败"
-            : status === "paused"
-              ? "已暂停"
-              : "等待中";
-
-        const toggle = document.createElement("label");
-        toggle.className = "toggle";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = Boolean(target.enabled);
-        checkbox.addEventListener("change", () => {
-          monitorTargets[index].enabled = checkbox.checked;
-          renderTargetList();
-          setHint("目标开关已更新，记得保存配置。", "warning");
-        });
-        const toggleText = document.createElement("span");
-        toggleText.textContent = target.enabled ? "启用" : "暂停";
-        toggle.append(checkbox, toggleText);
-
-        const actions = document.createElement("div");
-        actions.className = "row-actions";
-        const removeButton = document.createElement("button");
-        removeButton.className = "button is-small is-danger";
-        removeButton.textContent = "移除";
-        removeButton.addEventListener("click", () => {
-          monitorTargets.splice(index, 1);
-          renderTargetList();
-          setHint("目标已移除，记得保存配置。", "warning");
-        });
-        actions.appendChild(removeButton);
-
-        main.append(meta, badge, toggle, actions);
-
-        const filters = document.createElement("div");
-        filters.className = "target-filters";
-        let rulePreview = createRulePreview(target);
-
-        const includeField = document.createElement("div");
-        const includeLabel = document.createElement("label");
-        includeLabel.textContent = "包含关键词";
-        const includeInput = document.createElement("textarea");
-        includeInput.placeholder = "例如：A,B,C + D,j";
-        includeInput.value = String(target.include_keywords || "");
-        includeInput.addEventListener("input", () => {
-          monitorTargets[index].include_keywords = includeInput.value;
-          rulePreview = refreshRulePreview(rulePreview, monitorTargets[index]);
-          scheduleKeywordAutoSave(target.username, "包含");
-        });
-        includeField.append(includeLabel, includeInput);
-
-        const excludeField = document.createElement("div");
-        const excludeLabel = document.createElement("label");
-        excludeLabel.textContent = "排除关键词";
-        const excludeInput = document.createElement("textarea");
-        excludeInput.placeholder = "例如：spam,广告 + 返水";
-        excludeInput.value = String(target.exclude_keywords || "");
-        excludeInput.addEventListener("input", () => {
-          monitorTargets[index].exclude_keywords = excludeInput.value;
-          rulePreview = refreshRulePreview(rulePreview, monitorTargets[index]);
-          scheduleKeywordAutoSave(target.username, "排除");
-        });
-        excludeField.append(excludeLabel, excludeInput);
-
-        filters.append(includeField, excludeField);
-        row.append(main, filters, rulePreview);
-        targetList.appendChild(row);
-      });
-    }
-
-    function parseLogLine(line) {
-      const matched = String(line || "").match(/^(.*?) \| ([A-Z]+) \| (.*?) \| (.*)$/);
-      if (!matched) {
-        return {
-          time: "",
-          level: "INFO",
-          source: "runtime",
-          message: String(line || ""),
-          raw: String(line || "")
-        };
-      }
-      return {
-        time: matched[1],
-        level: matched[2],
-        source: matched[3],
-        message: matched[4],
-        raw: String(line || "")
-      };
-    }
-
-    function renderLogs(lines) {
-      const logs = document.getElementById("logs");
-      const shouldStick = document.getElementById("autoScroll").checked;
-      const previousScrollTop = logs.scrollTop;
-      logs.innerHTML = "";
-
-      const entries = Array.isArray(lines) ? lines : [];
-      if (!entries.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "当前还没有日志输出。";
-        logs.appendChild(empty);
-      }
-
-      for (const line of entries) {
-        const parsed = parseLogLine(line);
-        const row = document.createElement("div");
-        row.className = "log-row";
-
-        const time = document.createElement("div");
-        time.className = "log-time";
-        time.textContent = parsed.time || "--";
-
-        const level = document.createElement("div");
-        level.className = `log-level ${parsed.level.toLowerCase()}`;
-        level.textContent = parsed.level;
-
-        const source = document.createElement("div");
-        source.className = "log-source";
-        source.textContent = parsed.source;
-
-        const message = document.createElement("div");
-        message.className = "log-message";
-        message.textContent = parsed.message;
-
-        const actions = document.createElement("div");
-        actions.className = "log-actions";
-        const copyButton = document.createElement("button");
-        copyButton.className = "button is-small log-copy";
-        copyButton.textContent = "复制";
-        copyButton.addEventListener("click", async () => {
-          try {
-            await copyText(parsed.raw);
-            setHint("已复制该条日志。", "success");
-          } catch (err) {
-            setHint(err.message || "复制失败", "error");
-          }
-        });
-        actions.appendChild(copyButton);
-
-        row.append(time, level, source, message, actions);
-        logs.appendChild(row);
-      }
-
-      if (shouldStick) {
-        logs.scrollTop = logs.scrollHeight;
-      } else {
-        logs.scrollTop = previousScrollTop;
-      }
-    }
-
-    async function loadConfig() {
-      const config = await api("/api/config");
-      for (const key of fields) {
-        const element = document.getElementById(key);
-        if (!element) continue;
-        element.value = String(config[key] ?? "");
-      }
-      monitorTargets = normalizeTargets(config.monitor_targets);
-      renderTargetList();
-    }
-
-    function buildPayload() {
-      const payload = {};
-      for (const key of fields) {
-        const element = document.getElementById(key);
-        if (!element) continue;
-        payload[key] = element.value;
-      }
-      payload.monitor_targets = normalizeTargets(monitorTargets);
-      payload.twitter_poll_interval_sec = Number(payload.twitter_poll_interval_sec || 60);
-      payload.twitter_fetch_limit = Number(payload.twitter_fetch_limit || 5);
-      payload.twitter_bootstrap_drop_existing = payload.twitter_bootstrap_drop_existing === "true";
-      payload.dry_run = payload.dry_run === "true";
-      return payload;
-    }
-
-    async function saveConfig() {
-      try {
-        setSaveButtonBusy(true);
-        setHint("正在保存配置...", "info");
-        setSaveStatus("正在写入配置...");
-        await api("/api/config", "POST", buildPayload());
-        await loadConfig();
-        await refreshAll();
-        const nowText = new Date().toLocaleTimeString("zh-CN", { hour12: false });
-        if (currentRuntimeRunning) {
-          markRestartRequired();
-          setHint("右侧配置已保存，顶部“重启监控”按钮已高亮，点击后应用新配置。", "success");
-        } else {
-          setHint("右侧配置已保存。监控下次启动时会自动加载新配置。", "success");
-        }
-        setSaveStatus(`保存成功，时间 ${nowText}`);
-      } catch (err) {
-        setHint(err.message || "保存失败", "error");
-        setSaveStatus(`保存失败：${err.message || "未知错误"}`);
-      } finally {
-        setSaveButtonBusy(false);
-      }
-    }
-
-    async function startRuntime() {
-      const data = await api("/api/start", "POST");
-      restartAttention = false;
-      renderStatus(data);
-      syncRuntimeTargets(data.monitor_targets || []);
-      renderTargetList();
-      setHint("监控已启动。顶部状态卡与目标列表会持续刷新。", "success");
-    }
-
-    async function stopRuntime() {
-      const data = await api("/api/stop", "POST");
-      restartAttention = false;
-      renderStatus(data);
-      syncRuntimeTargets(data.monitor_targets || []);
-      renderTargetList();
-      setHint("监控已停止。你现在可以安全修改目标和配置。", "warning");
-    }
-
-    async function restartRuntime() {
-      const data = await api("/api/restart", "POST");
-      restartAttention = false;
-      renderStatus(data);
-      syncRuntimeTargets(data.monitor_targets || []);
-      renderTargetList();
-      setHint("监控已重启。新的目标和规则已经重新加载。", "success");
-    }
-
-    async function testSend() {
-      const data = await api("/api/test-send", "POST");
-      setHint(data.ok ? "测试发送成功。" : "测试发送失败，请检查推送设置。", data.ok ? "success" : "error");
-    }
-
-    async function clearLogs() {
-      await api("/api/logs/clear", "POST");
-      renderLogs([]);
-      setHint("日志缓存已清空。", "success");
-    }
-
-    async function refreshAll() {
-      try {
-        const [status, logs] = await Promise.all([api("/api/status"), api("/api/logs")]);
-        renderStatus(status);
-        syncRuntimeTargets(status.monitor_targets || []);
-        if (!isEditingTargetInputs()) {
-          renderTargetList();
-        }
-        renderLogs(logs.lines || []);
-      } catch (err) {
-        setHint(err.message || "刷新失败", "error");
-      }
-    }
-
-    function addTarget() {
-      const input = document.getElementById("new_target_username");
-      const username = input.value.trim();
-      if (!username) {
-        setHint("请输入有效的 X 用户名。", "warning");
-        return;
-      }
-      const exists = monitorTargets.some((item) => item.username.toLowerCase() === username.toLowerCase());
-      if (exists) {
-        setHint("该目标已经存在，不需要重复添加。", "warning");
-        return;
-      }
-      monitorTargets.push({ username, enabled: true });
-      monitorTargets[monitorTargets.length - 1].include_keywords = "";
-      monitorTargets[monitorTargets.length - 1].exclude_keywords = "";
-      input.value = "";
-      renderTargetList();
-      setHint("目标已加入列表，记得保存配置。", "warning");
-    }
-
-    function initTabs() {
-      const buttons = Array.from(document.querySelectorAll("[data-tab]"));
-      const panels = Array.from(document.querySelectorAll("[data-panel]"));
-      buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const selected = button.dataset.tab;
-          buttons.forEach((item) => item.classList.toggle("active", item === button));
-          panels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === selected));
-        });
-      });
-    }
-
-    function initSecrets() {
-      const buttons = Array.from(document.querySelectorAll("[data-toggle-secret]"));
-      buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const input = document.getElementById(button.dataset.toggleSecret);
-          if (!input) return;
-          input.type = input.type === "password" ? "text" : "password";
-          button.textContent = input.type === "password" ? "显示" : "隐藏";
-        });
-      });
-    }
-
-    function initTargetInput() {
-      const input = document.getElementById("new_target_username");
-      input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          addTarget();
-        }
-      });
-    }
-
-    async function boot() {
-      try {
-        initTabs();
-        initSecrets();
-        initTargetInput();
-        await loadConfig();
-        await refreshAll();
-        refreshTimer = setInterval(refreshAll, 3000);
-      } catch (err) {
-        setHint(err.message || "初始化失败", "error");
-      }
-    }
-
+    const fields=["twitter_provider","twitter_poll_interval_sec","twitter_fetch_limit","twitter_bootstrap_drop_existing","dry_run","telegram_bot_token","telegram_chat_id","twikit_username","twikit_email","twikit_password","twikit_cookies_file"];
+    let monitorTargets=[]; let targetRuntimeState={}; let refreshTimer=null; let keywordAutoSaveTimer=null; let keywordAutoSaveSeq=0; let currentRuntimeRunning=false; let restartAttention=false;
+    async function api(path, method="GET", body=null){ const resp=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):null}); const data=await resp.json(); if(!resp.ok) throw new Error(data.detail||"request failed"); return data; }
+    function setHint(message, tone="info"){ const hint=document.getElementById("hint"); if(!hint) return; hint.textContent=message; hint.className=`hint ${tone==="success"?"is-success":tone==="error"?"is-error":tone==="warning"?"is-warning":""}`.trim(); }
+    function syncHintWithRuntime(data, force=false){ const hint=document.getElementById("hint"); if(!hint) return; const currentText=hint.textContent||""; const nextText=data.running?"监控运行中":"监控未启动"; const nextTone=data.running?"success":"warning"; const isInitialHint=currentText==="状态加载中..."||currentText==="正在获取状态..."; if(force||isInitialHint) setHint(nextText,nextTone); }
+    function setSaveStatus(message){ const saveStatus=document.getElementById("saveStatus"); if(saveStatus) saveStatus.textContent=message; }
+    function setSaveButtonBusy(isBusy){ const button=document.getElementById("saveConfigButton"); if(!button) return; button.disabled=isBusy; button.setAttribute("aria-busy", isBusy?"true":"false"); button.textContent=isBusy?"保存中...":"保存配置"; button.style.opacity=isBusy?"0.7":"1"; button.style.cursor=isBusy?"wait":"pointer"; }
+    function updateRestartButtonState(){ const button=document.getElementById("restartRuntimeButton"); if(!button) return; const needsAttention=currentRuntimeRunning&&restartAttention; button.classList.toggle("needs-attention",needsAttention); button.textContent="重启"; button.title=needsAttention?"配置已保存，点击这里重启监控":"重新启动当前监控实例"; }
+    function markRestartRequired(){ restartAttention=true; updateRestartButtonState(); }
+    function buildMonitorTargetsPayload(){ return { monitor_targets: normalizeTargets(monitorTargets) }; }
+    function formatTime(value){ if(!value) return "暂无"; const date=new Date(value); if(Number.isNaN(date.getTime())) return String(value); return date.toLocaleString("zh-CN",{hour12:false}); }
+    function normalizeFilterExpression(raw){ const text=Array.isArray(raw)?raw.join(","):String(raw||""); const clauses=[]; for(const clause of text.replace(/\r/g,"\n").replace(/\n/g,",").split(",")){ const parts=clause.split("+").map((part)=>String(part||"").trim()).filter(Boolean); if(!parts.length) continue; clauses.push(parts.join("+")); } return clauses.join(","); }
+    function parseFilterClauses(raw){ const normalized=normalizeFilterExpression(raw); if(!normalized) return []; return normalized.split(",").map((clause)=>clause.split("+").map((part)=>part.trim()).filter(Boolean)).filter((parts)=>parts.length); }
+    function getFilterClauses(raw){ const normalized=normalizeFilterExpression(raw); return normalized?normalized.split(",").map((clause)=>clause.trim()).filter(Boolean):[]; }
+    function removeFilterClause(target, kind, clauseIndex){ const key=kind==="include"?"include_keywords":"exclude_keywords"; const clauses=getFilterClauses(target[key]); clauses.splice(clauseIndex,1); target[key]=clauses.join(","); }
+    function addFilterClause(target, kind, rawValue){ const key=kind==="include"?"include_keywords":"exclude_keywords"; const value=normalizeFilterExpression(rawValue); if(!value) return { ok:false, message:"请输入关键词" }; const clauses=getFilterClauses(target[key]); const exists=clauses.some((item)=>item.toLowerCase()===value.toLowerCase()); if(exists) return { ok:false, message:"该关键词已存在" }; clauses.push(value); target[key]=clauses.join(","); return { ok:true }; }
+    function createRulePreviewBlock(labelText, clauses, emptyText, tone="include", onRemove=null){ const block=document.createElement("div"); block.className="rule-preview-block"; const label=document.createElement("div"); label.className="rule-preview-label"; label.textContent=labelText; block.appendChild(label); if(!clauses.length){ const empty=document.createElement("div"); empty.className="rule-preview-empty"; empty.textContent=emptyText; block.appendChild(empty); return block; } const tags=document.createElement("div"); tags.className="rule-preview-tags"; clauses.forEach((parts,index)=>{ const tag=document.createElement("div"); tag.className=`rule-tag${tone==="exclude"?" exclude":""}`; const text=document.createElement("span"); text.className="rule-tag-text"; text.textContent=parts.length>1?parts.join(" + "):parts[0]; tag.appendChild(text); if(onRemove){ const removeButton=document.createElement("button"); removeButton.type="button"; removeButton.className="rule-tag-remove"; removeButton.textContent="×"; removeButton.addEventListener("click",()=>onRemove(index)); tag.appendChild(removeButton); } tags.appendChild(tag); }); block.appendChild(tags); return block; }
+    function createRulePreview(target, onRemoveClause){ const includeClauses=parseFilterClauses(target.include_keywords); const excludeClauses=parseFilterClauses(target.exclude_keywords); const preview=document.createElement("div"); preview.className="rule-preview"; const title=document.createElement("div"); title.className="rule-preview-title"; title.textContent="当前生效"; preview.appendChild(title); const grid=document.createElement("div"); grid.className="rule-preview-grid"; grid.append(createRulePreviewBlock("包含关键词",includeClauses,"未设置包含关键词时，将匹配该目标的全部推文。","include", onRemoveClause ? (clauseIndex)=>onRemoveClause("include", clauseIndex) : null),createRulePreviewBlock("排除关键词",excludeClauses,"未设置排除关键词时，不会额外拦截推文。","exclude", onRemoveClause ? (clauseIndex)=>onRemoveClause("exclude", clauseIndex) : null)); preview.appendChild(grid); const footnote=document.createElement("div"); footnote.className="rule-preview-footnote"; footnote.textContent="输入一个词后，点击“添加包含”或“添加排除”，下方列表会立即显示生效项。"; preview.appendChild(footnote); return preview; }
+    function refreshRulePreview(preview,target){ const nextPreview=createRulePreview(target); preview.replaceWith(nextPreview); return nextPreview; }
+    function normalizeTargets(rawTargets){ const seen=new Set(); const targets=[]; for(const item of Array.isArray(rawTargets)?rawTargets:[]){ const username=String(item.username||"").trim(); if(!username) continue; const key=username.toLowerCase(); if(seen.has(key)) continue; seen.add(key); targets.push({ username, enabled:item.enabled!==false, include_keywords:normalizeFilterExpression(item.include_keywords), exclude_keywords:normalizeFilterExpression(item.exclude_keywords) }); } return targets; }
+    async function copyText(text){ const value=String(text||""); if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(value); return; } const helper=document.createElement("textarea"); helper.value=value; helper.setAttribute("readonly","readonly"); helper.style.position="fixed"; helper.style.opacity="0"; document.body.appendChild(helper); helper.focus(); helper.select(); const ok=document.execCommand("copy"); document.body.removeChild(helper); if(!ok) throw new Error("浏览器不支持剪贴板复制"); }
+    function scheduleKeywordAutoSave(username,kind){ if(keywordAutoSaveTimer) clearTimeout(keywordAutoSaveTimer); setSaveStatus(`@${username} 的${kind}关键词修改后将自动保存...`); keywordAutoSaveTimer=setTimeout(()=>{ void autoSaveKeywordFilters(username,kind); },800); }
+    async function autoSaveKeywordFilters(username,kind){ const requestId=++keywordAutoSaveSeq; try{ await api("/api/config","POST",buildMonitorTargetsPayload()); if(requestId!==keywordAutoSaveSeq) return; const nowText=new Date().toLocaleTimeString("zh-CN",{hour12:false}); if(currentRuntimeRunning){ markRestartRequired(); setHint("关键词已自动保存，顶部“重启监控”按钮已高亮，点击后生效。","success"); }else{ setHint("关键词已自动保存。监控下次启动时会加载新配置。","success"); } setSaveStatus(`@${username} 的${kind}关键词已自动保存，时间 ${nowText}`); }catch(err){ if(requestId!==keywordAutoSaveSeq) return; setHint(err.message||"关键词自动保存失败","error"); setSaveStatus(`@${username} 的${kind}关键词自动保存失败：${err.message||"未知错误"}`); } }
+    function isEditingTargetInputs(){ const active=document.activeElement; if(!active) return false; if(active.id==="new_target_username") return true; const targetList=document.getElementById("targetList"); if(!targetList||!targetList.contains(active)) return false; return active.tagName==="TEXTAREA"||active.tagName==="INPUT"||active.tagName==="SELECT"; }
+    function syncRuntimeTargets(items){ const nextState={}; for(const item of Array.isArray(items)?items:[]) nextState[String(item.username||"").toLowerCase()]=item; targetRuntimeState=nextState; }
+    function renderStatus(data){ currentRuntimeRunning=Boolean(data.running); updateRestartButtonState(); syncHintWithRuntime(data); const statusCards=document.getElementById("statusCards"); const cards=[{label:"运行状态",value:data.running?"运行中":"已停止",sub:data.running?"实例正在持续轮询抓取":"当前未执行轮询任务",live:true},{label:"已采集",value:String(data.collected_count||0),sub:"累计进入处理链路的推文数"},{label:"已发送",value:String(data.sent_count||0),sub:"累计成功推送到 Telegram"},{label:"失败数",value:String(data.failed_count||0),sub:data.last_error?`最近错误：${data.last_error}`:"当前没有新的错误摘要"},{label:"最近轮询",value:formatTime(data.last_loop_at),sub:data.started_at?`启动于 ${formatTime(data.started_at)}`:"尚未启动"}]; statusCards.innerHTML=""; for(const card of cards){ const el=document.createElement("div"); el.className="kpi-card"; const label=document.createElement("div"); label.className="kpi-label"; label.textContent=card.label; el.appendChild(label); const value=document.createElement("div"); value.className="kpi-value"; if(card.live){ const live=document.createElement("div"); live.className="status-live"; const dot=document.createElement("span"); dot.className=`status-dot ${data.running?"running":""}`.trim(); const text=document.createElement("span"); text.textContent=card.value; live.append(dot,text); value.appendChild(live);}else{ value.textContent=card.value; } el.appendChild(value); const sub=document.createElement("div"); sub.className="kpi-sub"; sub.textContent=card.sub; el.appendChild(sub); statusCards.appendChild(el); } }
+    function renderTargetList(){ const targetList=document.getElementById("targetList"); const targetSummary=document.getElementById("targetSummary"); const enabledCount=monitorTargets.filter((item)=>item.enabled).length; targetSummary.textContent=`${monitorTargets.length} 个目标 / ${enabledCount} 个启用中`; targetList.innerHTML=""; if(!monitorTargets.length){ const empty=document.createElement("div"); empty.className="empty-state"; empty.textContent="还没有监控目标。新增一个用户名后保存配置，即可开始精细化管理。"; targetList.appendChild(empty); return; }
+      monitorTargets.forEach((target,index)=>{ const runtime=targetRuntimeState[target.username.toLowerCase()]||{}; const row=document.createElement("div"); row.className="target-row"; const main=document.createElement("div"); main.className="target-main"; const meta=document.createElement("div"); const title=document.createElement("div"); title.className="target-name"; title.textContent=`@${target.username}`; const detail=document.createElement("div"); detail.className="target-meta"; detail.textContent=runtime.last_error?`最近错误：${runtime.last_error}`:`最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count||0} 条`; meta.append(title,detail); const badge=document.createElement("div"); const status=!target.enabled?"paused":runtime.last_fetch_status||"idle"; badge.className=`status-badge ${status}`; badge.textContent=status==="success"?"抓取成功":status==="error"?"抓取失败":status==="paused"?"已暂停":"等待中"; const toggle=document.createElement("label"); toggle.className="toggle"; const checkbox=document.createElement("input"); checkbox.type="checkbox"; checkbox.checked=Boolean(target.enabled); checkbox.addEventListener("change",()=>{ monitorTargets[index].enabled=checkbox.checked; renderTargetList(); setHint("目标开关已更新，记得保存配置。","warning"); }); const toggleText=document.createElement("span"); toggleText.textContent=target.enabled?"启用":"暂停"; toggle.append(checkbox,toggleText); const actions=document.createElement("div"); actions.className="row-actions"; const removeButton=document.createElement("button"); removeButton.className="button is-small is-danger"; removeButton.type="button"; removeButton.textContent="移除"; removeButton.addEventListener("click",()=>{ monitorTargets.splice(index,1); renderTargetList(); setHint("目标已移除，记得保存配置。","warning"); }); actions.appendChild(removeButton); main.append(meta,badge,toggle,actions); const filters=document.createElement("div"); filters.className="field"; const keywordLabel=document.createElement("label"); keywordLabel.textContent="关键词"; const composer=document.createElement("div"); composer.className="keyword-composer"; const keywordInput=document.createElement("input"); keywordInput.type="text"; keywordInput.placeholder="输入一个关键词，例如空投 或 spam + 广告"; const addIncludeButton=document.createElement("button"); addIncludeButton.type="button"; addIncludeButton.className="button is-primary"; addIncludeButton.textContent="添加包含"; const addExcludeButton=document.createElement("button"); addExcludeButton.type="button"; addExcludeButton.className="button is-danger"; addExcludeButton.textContent="添加排除"; let rulePreview=createRulePreview(target,(kind,clauseIndex)=>{ removeFilterClause(monitorTargets[index],kind,clauseIndex); renderTargetList(); scheduleKeywordAutoSave(target.username,kind==="include"?"包含":"排除"); setHint(kind==="include"?"包含关键词已移除。":"排除关键词已移除。","warning"); }); const addClause=(kind)=>{ const result=addFilterClause(monitorTargets[index],kind,keywordInput.value); if(!result.ok){ setHint(result.message,"warning"); return; } keywordInput.value=""; renderTargetList(); scheduleKeywordAutoSave(target.username,kind==="include"?"包含":"排除"); setHint(kind==="include"?"包含关键词已加入。":"排除关键词已加入。","success"); }; addIncludeButton.addEventListener("click",()=>addClause("include")); addExcludeButton.addEventListener("click",()=>addClause("exclude")); keywordInput.addEventListener("keydown",(event)=>{ if(event.key==="Enter"){ event.preventDefault(); addClause("include"); } }); composer.append(keywordInput,addIncludeButton,addExcludeButton); filters.append(keywordLabel,composer,rulePreview); row.append(main,filters); targetList.appendChild(row); }); }
+    function parseLogLine(line){ const matched=String(line||"").match(/^(.*?) \| ([A-Z]+) \| (.*?) \| (.*)$/); if(!matched){ return { time:"", level:"INFO", source:"runtime", message:String(line||""), raw:String(line||"") }; } return { time:matched[1], level:matched[2], source:matched[3], message:matched[4], raw:String(line||"") }; }
+    function renderLogs(lines){ const logs=document.getElementById("logs"); const shouldStick=document.getElementById("autoScroll").checked; const previousScrollTop=logs.scrollTop; logs.innerHTML=""; const entries=Array.isArray(lines)?lines:[]; if(!entries.length){ const empty=document.createElement("div"); empty.className="empty-state"; empty.textContent="当前还没有日志输出。"; logs.appendChild(empty); } for(const line of entries){ const parsed=parseLogLine(line); const row=document.createElement("div"); row.className="log-row"; const time=document.createElement("div"); time.className="log-time"; time.textContent=parsed.time||"--"; const level=document.createElement("div"); level.className=`log-level ${parsed.level.toLowerCase()}`; level.textContent=parsed.level; const source=document.createElement("div"); source.className="log-source"; source.textContent=parsed.source; const message=document.createElement("div"); message.className="log-message"; message.textContent=parsed.message; const actions=document.createElement("div"); actions.className="log-actions"; const copyButton=document.createElement("button"); copyButton.className="button is-small log-copy"; copyButton.type="button"; copyButton.textContent="复制"; copyButton.addEventListener("click",async()=>{ try{ await copyText(parsed.raw); setHint("已复制该条日志。","success"); }catch(err){ setHint(err.message||"复制失败","error"); } }); actions.appendChild(copyButton); row.append(time,level,source,message,actions); logs.appendChild(row); } if(shouldStick){ logs.scrollTop=logs.scrollHeight; } else { logs.scrollTop=previousScrollTop; } }
+    async function loadConfig(){ const config=await api("/api/config"); for(const key of fields){ const element=document.getElementById(key); if(!element) continue; element.value=String(config[key]??""); } monitorTargets=normalizeTargets(config.monitor_targets); renderTargetList(); }
+    function buildPayload(){ const payload={}; for(const key of fields){ const element=document.getElementById(key); if(!element) continue; payload[key]=element.value; } payload.monitor_targets=normalizeTargets(monitorTargets); payload.twitter_poll_interval_sec=Number(payload.twitter_poll_interval_sec||60); payload.twitter_fetch_limit=Number(payload.twitter_fetch_limit||5); payload.twitter_bootstrap_drop_existing=payload.twitter_bootstrap_drop_existing==="true"; payload.dry_run=payload.dry_run==="true"; return payload; }
+    async function saveConfig(){ try{ setSaveButtonBusy(true); setHint("正在保存配置...","info"); setSaveStatus("正在写入配置..."); await api("/api/config","POST",buildPayload()); await loadConfig(); await refreshAll(); const nowText=new Date().toLocaleTimeString("zh-CN",{hour12:false}); if(currentRuntimeRunning){ markRestartRequired(); setHint("右侧配置已保存，顶部“重启监控”按钮已高亮，点击后应用新配置。","success"); }else{ setHint("右侧配置已保存。监控下次启动时会自动加载新配置。","success"); } setSaveStatus(`保存成功，时间 ${nowText}`); }catch(err){ setHint(err.message||"保存失败","error"); setSaveStatus(`保存失败：${err.message||"未知错误"}`); } finally { setSaveButtonBusy(false); } }
+    async function startRuntime(){ const data=await api("/api/start","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已启动。顶部状态卡与目标列表会持续刷新。","success"); }
+    async function stopRuntime(){ const data=await api("/api/stop","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已停止。你现在可以安全修改目标和配置。","warning"); }
+    async function restartRuntime(){ const data=await api("/api/restart","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已重启。新的目标和规则已经重新加载。","success"); }
+    async function testSend(){ const data=await api("/api/test-send","POST"); setHint(data.ok?"测试发送成功。":"测试发送失败，请检查推送设置。", data.ok?"success":"error"); }
+    async function clearLogs(){ await api("/api/logs/clear","POST"); renderLogs([]); setHint("日志缓存已清空。","success"); }
+    async function refreshAll(){ try{ const [status,logs]=await Promise.all([api("/api/status"), api("/api/logs")]); renderStatus(status); syncRuntimeTargets(status.monitor_targets||[]); if(!isEditingTargetInputs()) renderTargetList(); renderLogs(logs.lines||[]); }catch(err){ setHint(err.message||"刷新失败","error"); } }
+    function addTarget(){ const input=document.getElementById("new_target_username"); const username=input.value.trim(); if(!username){ setHint("请输入有效的 X 用户名。","warning"); return; } const exists=monitorTargets.some((item)=>item.username.toLowerCase()===username.toLowerCase()); if(exists){ setHint("该目标已经存在，不需要重复添加。","warning"); return; } monitorTargets.push({ username, enabled:true, include_keywords:"", exclude_keywords:"" }); input.value=""; renderTargetList(); setHint("目标已加入列表，记得保存配置。","warning"); }
+    function initTabs(){ const buttons=Array.from(document.querySelectorAll("[data-tab]")); const panels=Array.from(document.querySelectorAll("[data-panel]")); const selectTab=(selectedButton,moveFocus=false)=>{ const selected=selectedButton.dataset.tab; buttons.forEach((item)=>{ const active=item===selectedButton; item.classList.toggle("active",active); item.setAttribute("aria-selected", active?"true":"false"); item.setAttribute("tabindex", active?"0":"-1"); }); panels.forEach((panel)=>{ const active=panel.dataset.panel===selected; panel.classList.toggle("active",active); panel.hidden=!active; }); if(moveFocus) selectedButton.focus(); }; buttons.forEach((button)=>{ button.addEventListener("click",()=>{ selectTab(button); }); button.addEventListener("keydown",(event)=>{ const currentIndex=buttons.indexOf(button); if(currentIndex===-1) return; let nextIndex=currentIndex; if(event.key==="ArrowRight"||event.key==="ArrowDown") nextIndex=(currentIndex+1)%buttons.length; else if(event.key==="ArrowLeft"||event.key==="ArrowUp") nextIndex=(currentIndex-1+buttons.length)%buttons.length; else if(event.key==="Home") nextIndex=0; else if(event.key==="End") nextIndex=buttons.length-1; else return; event.preventDefault(); selectTab(buttons[nextIndex],true); }); }); const activeButton=buttons.find((button)=>button.classList.contains("active"))||buttons[0]; if(activeButton) selectTab(activeButton); }
+    function initSecrets(){ const buttons=Array.from(document.querySelectorAll("[data-toggle-secret]")); buttons.forEach((button)=>{ button.addEventListener("click",()=>{ const input=document.getElementById(button.dataset.toggleSecret); if(!input) return; input.type=input.type==="password"?"text":"password"; button.textContent=input.type==="password"?"显示":"隐藏"; button.setAttribute("aria-pressed", input.type==="text"?"true":"false"); }); }); }
+    function initTargetInput(){ const input=document.getElementById("new_target_username"); input.addEventListener("keydown",(event)=>{ if(event.key==="Enter"){ event.preventDefault(); addTarget(); } }); }
+    async function boot(){ try{ initTabs(); initSecrets(); initTargetInput(); await loadConfig(); await refreshAll(); refreshTimer=setInterval(()=>{ if(!document.hidden) void refreshAll(); },3000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) void refreshAll(); }); setSaveStatus("配置已加载。修改后可直接保存。"); }catch(err){ setHint(err.message||"初始化失败","error"); } }
     boot();
   </script>
 </body>
