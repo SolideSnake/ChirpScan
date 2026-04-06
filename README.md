@@ -2,9 +2,6 @@
 
 Single-process app with internal `collector` and `notifier` modules.
 
-Project Initiator: GG Bond  
-Implementation: Codex
-
 ## Features
 
 - One process, clean module boundaries
