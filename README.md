@@ -2,8 +2,8 @@
 
 Single-process app with internal `collector` and `notifier` modules.
 
-项目发起：GG Bond  
-开发实现：Codex
+Project Initiator: GG Bond  
+Implementation: Codex
 
 ## Features
 
