@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -13,7 +13,6 @@
       --bg: #08111d;
       --panel: rgba(14, 26, 45, 0.94);
       --border: #223553;
-      --border-soft: rgba(122, 162, 247, 0.16);
       --text: #edf4ff;
       --muted: #96a9ca;
       --accent: #39d4ac;
@@ -25,17 +24,16 @@
       --radius-xl: 24px;
       --radius-lg: 18px;
       --font-sans: "Segoe UI Variable", "Bahnschrift", "Microsoft YaHei UI", sans-serif;
-      --font-mono: "Cascadia Code", "Consolas", "SFMono-Regular", "Courier New", monospace;
+      --font-mono: "Cascadia Code", "Consolas", "Courier New", monospace;
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: var(--font-sans);
       background:
         radial-gradient(circle at 15% 15%, rgba(57, 212, 172, 0.12), transparent 24%),
-        radial-gradient(circle at 90% 10%, rgba(118, 184, 255, 0.14), transparent 22%),
+        radial-gradient(circle at 88% 8%, rgba(118, 184, 255, 0.14), transparent 22%),
         linear-gradient(180deg, #0b1525 0%, #08111d 100%);
       color: var(--text);
       line-height: 1.5;
@@ -57,8 +55,20 @@
       outline: 3px solid rgba(118, 184, 255, 0.36);
       outline-offset: 2px;
     }
-    .shell { position: relative; width: min(1360px, calc(100% - 32px)); margin: 28px auto 44px; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(4, 10, 20, 0.56);
+      color: var(--text);
+    }
+    input::placeholder, textarea::placeholder { color: #5e7090; }
+    label { display: block; margin-bottom: 0; color: #d7e3f7; font-size: 12px; }
+    textarea { min-height: 72px; resize: vertical; }
+    .shell { position: relative; width: min(1500px, calc(100% - 24px)); margin: 14px auto 28px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .page-tabs { display: inline-flex; align-items: center; gap: 6px; padding: 4px; border: 1px solid rgba(118, 184, 255, 0.14); border-radius: 14px; background: rgba(5, 12, 22, 0.54); }
     .card {
       background: linear-gradient(180deg, rgba(16, 28, 46, 0.98), rgba(9, 17, 30, 0.96)), var(--panel);
       border: 1px solid var(--border);
@@ -66,251 +76,1407 @@
       box-shadow: var(--shadow);
       backdrop-filter: blur(16px);
     }
-    .hero {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .hero-toolbar-buttons {
-      display: flex;
-      gap: 12px;
-      flex-wrap: nowrap;
-      justify-content: flex-end;
-    }
-    .hero-toolbar-buttons .button {
-      flex: 1 1 0;
-      min-width: 0;
-    }
-    .hint {
-      display: inline-flex; align-items: center; gap: 10px; max-width: 100%; width: fit-content; padding: 0;
-      border: 0; background: transparent; color: var(--muted); font-size: 13px;
-    }
-    .hint::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px rgba(118, 184, 255, 0.7); }
-    .hint.is-success::before { background: var(--success); box-shadow: 0 0 12px rgba(52, 211, 153, 0.78); }
-    .hint.is-warning::before { background: var(--warning); box-shadow: 0 0 12px rgba(255, 188, 109, 0.78); }
-    .hint.is-error::before { background: var(--danger); box-shadow: 0 0 12px rgba(255, 111, 136, 0.8); }
-    .toolbar, .row-actions, .tab-list, .log-tools, .secret-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .stack-card { padding: 12px; }
     .button {
-      min-height: 42px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.03);
-      color: var(--text); cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
-      backdrop-filter: blur(8px);
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
     }
     .button:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.45); background: rgba(118, 184, 255, 0.09); }
     .button.is-primary { color: #ddfff6; border-color: rgba(57, 212, 172, 0.45); background: rgba(57, 212, 172, 0.1); }
     .button.is-warning { color: #fff0d7; border-color: rgba(255, 188, 109, 0.48); background: rgba(255, 188, 109, 0.1); }
     .button.is-danger { color: #ffe1e7; border-color: rgba(255, 111, 136, 0.48); background: rgba(255, 111, 136, 0.1); }
-    .button.is-small { min-height: 36px; padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+    .button.is-small { min-height: 30px; padding: 6px 9px; font-size: 12px; border-radius: 9px; }
     .button.is-tab { color: var(--muted); background: transparent; }
-    .button[aria-selected="true"] { color: var(--text); border-color: rgba(57, 212, 172, 0.45); background: rgba(57, 212, 172, 0.1); box-shadow: inset 0 0 0 1px rgba(57, 212, 172, 0.08); }
+    .button[aria-selected="true"] { color: var(--text); border-color: rgba(57, 212, 172, 0.45); background: rgba(57, 212, 172, 0.1); }
     .button[disabled] { opacity: 0.62; cursor: not-allowed; transform: none; }
     .button.restart-button.needs-attention { animation: restartPulse 1.8s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.22), 0 0 24px rgba(255, 188, 109, 0.24); }
     @keyframes restartPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.18), 0 0 14px rgba(255, 188, 109, 0.16); } 50% { box-shadow: 0 0 0 1px rgba(255, 188, 109, 0.3), 0 0 28px rgba(255, 188, 109, 0.36); } }
-    .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+    .hint { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+    .hint::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px rgba(118, 184, 255, 0.7); }
+    .hint.is-success::before { background: var(--success); box-shadow: 0 0 12px rgba(52, 211, 153, 0.78); }
+    .hint.is-warning::before { background: var(--warning); box-shadow: 0 0 12px rgba(255, 188, 109, 0.78); }
+    .hint.is-error::before { background: var(--danger); box-shadow: 0 0 12px rgba(255, 111, 136, 0.8); }
+    .page-tabs .hint { min-height: 34px; padding: 0 8px 0 4px; white-space: nowrap; }
+    .toolbar, .row-actions, .log-tools, .platform-switches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .toolbar { justify-content: flex-end; margin-bottom: 10px; }
+    .topbar .toolbar { margin-bottom: 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
     .section-head h2, .section-head h3 { margin: 0; }
-    .section-head p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-    .kpi-card { min-height: 118px; padding: 16px; border-radius: var(--radius-lg); border: 1px solid rgba(118, 184, 255, 0.14); background: rgba(4, 10, 20, 0.48); transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
-    .kpi-card:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.28); background: rgba(8, 15, 27, 0.76); }
-    .kpi-label { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-    .kpi-value { margin-top: 12px; font-size: 28px; font-weight: 700; line-height: 1.12; }
-    .kpi-sub { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.4; word-break: break-word; }
+    .section-head h2 { font-size: 20px; }
+    .section-head p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .status-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin-bottom: 10px; }
+    .status-item { flex: 1 1 138px; min-height: 46px; padding: 7px 10px; border-radius: 12px; border: 1px solid rgba(118, 184, 255, 0.14); background: rgba(4, 10, 20, 0.48); }
+    .status-item.is-wide { flex: 1.5 1 220px; }
+    .status-label { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .status-value { margin-top: 3px; font-size: 15px; font-weight: 700; line-height: 1.15; }
+    .status-sub { margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .status-live { display: inline-flex; align-items: center; gap: 10px; }
     .status-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 12px rgba(255, 111, 136, 0.72); }
     .status-dot.running { background: var(--success); box-shadow: 0 0 14px rgba(52, 211, 153, 0.85); animation: pulse 1.8s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(0.92); opacity: 0.76; } 50% { transform: scale(1.12); opacity: 1; } }
-    .main-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: 16px; margin-bottom: 16px; }
-    .stack-card { padding: 18px; }
-    .add-target { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
-    .target-list { display: flex; flex-direction: column; gap: 10px; max-height: 560px; overflow: auto; padding-right: 2px; }
-    .target-row { display: flex; flex-direction: column; gap: 14px; padding: 14px; border-radius: 16px; border: 1px solid rgba(118, 184, 255, 0.12); background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018)); transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
-    .target-row:hover { transform: translateY(-1px); border-color: rgba(118, 184, 255, 0.26); background: linear-gradient(180deg, rgba(118, 184, 255, 0.08), rgba(255, 255, 255, 0.018)); }
-    .target-main { display: grid; grid-template-columns: minmax(0, 1.35fr) auto auto auto; gap: 14px; align-items: center; }
-    .target-name { font-size: 16px; font-weight: 600; line-height: 1.35; word-break: break-word; }
-    .target-meta { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.45; }
-    .status-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 88px; padding: 8px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--muted); font-size: 12px; white-space: nowrap; }
-    .status-badge.success { color: #b8ffe0; border-color: rgba(52, 211, 153, 0.32); background: rgba(52, 211, 153, 0.12); }
-    .status-badge.error { color: #ffd6de; border-color: rgba(255, 111, 136, 0.32); background: rgba(255, 111, 136, 0.12); }
-    .status-badge.paused { color: #ffe3ba; border-color: rgba(255, 188, 109, 0.3); background: rgba(255, 188, 109, 0.12); }
-    .status-badge.idle { color: #d1dcf0; border-color: rgba(209, 220, 240, 0.18); background: rgba(209, 220, 240, 0.06); }
-    .toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; white-space: nowrap; }
-    .toggle input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
-    .empty-state { padding: 24px; text-align: center; color: var(--muted); border-radius: 16px; border: 1px dashed rgba(118, 184, 255, 0.18); background: rgba(255, 255, 255, 0.02); }
-    .tab-panel { display: none; margin-top: 16px; }
-    .tab-panel.active { display: block; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    label { display: block; margin-bottom: 6px; color: #d7e3f7; font-size: 13px; }
-    input, select, textarea { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(4, 10, 20, 0.56); color: var(--text); transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
-    input::placeholder, textarea::placeholder { color: #677a9b; }
-    input:focus, select:focus, textarea:focus { border-color: rgba(57, 212, 172, 0.48); box-shadow: 0 0 0 3px rgba(57, 212, 172, 0.14); background: rgba(4, 10, 20, 0.7); }
-    textarea { min-height: 92px; resize: vertical; }
-    .target-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .keyword-composer {
+    .page { display: none; }
+    .page.active { display: block; }
+    .main-grid { display: block; margin-bottom: 10px; }
+    .settings-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .keyword-composer .button { min-height: 44px; }
-    .rule-preview { margin-top: 2px; padding: 14px; border-radius: 14px; border: 1px solid rgba(57, 212, 172, 0.16); background: linear-gradient(180deg, rgba(57, 212, 172, 0.08), rgba(118, 184, 255, 0.04)), rgba(4, 10, 20, 0.58); }
-    .rule-preview-title { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: #ddfff6; }
-    .rule-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .rule-preview-block { min-width: 0; }
-    .rule-preview-label { margin-bottom: 8px; color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-    .rule-preview-empty { color: var(--muted); font-size: 13px; line-height: 1.45; }
-    .rule-preview-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-    .rule-tag { display: inline-flex; align-items: center; max-width: 100%; padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(118, 184, 255, 0.2); background: rgba(118, 184, 255, 0.1); color: #dcecff; font-size: 12px; line-height: 1.35; word-break: break-word; }
-    .rule-tag.exclude { border-color: rgba(255, 111, 136, 0.22); background: rgba(255, 111, 136, 0.1); color: #ffd7de; }
-    .rule-tag-text { display: inline-flex; align-items: center; }
-    .rule-tag-remove {
-      display: inline-flex;
-      align-items: center;
+      grid-template-columns: minmax(0, 1040px);
       justify-content: center;
+      gap: 12px;
+    }
+    .settings-grid .stack-card { padding: 18px; }
+    #settingsPage .save-row {
+      width: min(1040px, 100%);
+      margin: 12px auto 0;
+      padding: 0 2px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .secret-input { position: relative; }
+    .secret-input input { padding-right: 56px; }
+    .secret-toggle {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: color 160ms ease, background 160ms ease;
+    }
+    .secret-toggle:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .switch-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(4, 10, 20, 0.56);
+      cursor: pointer;
+    }
+    .switch-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .switch-slider {
+      position: relative;
+      flex: 0 0 46px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(118, 184, 255, 0.16);
+      background: rgba(255, 255, 255, 0.06);
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+    .switch-slider::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
       width: 18px;
       height: 18px;
-      margin-left: 8px;
-      border: 0;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
-      color: currentColor;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-      font-size: 12px;
+      background: #c9d6e9;
+      transition: transform 160ms ease, background 160ms ease;
     }
-    .rule-preview-footnote { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .switch-input:checked + .switch-slider {
+      background: rgba(57, 212, 172, 0.14);
+      border-color: rgba(57, 212, 172, 0.4);
+      box-shadow: inset 0 0 0 1px rgba(57, 212, 172, 0.08);
+    }
+    .switch-input:checked + .switch-slider::after {
+      transform: translateX(20px);
+      background: #e3fff7;
+    }
+    .switch-copy { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .add-target { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 10px; }
+    .target-list { display: flex; flex-direction: column; gap: 8px; max-height: 720px; overflow: auto; padding-right: 2px; }
+    .target-row { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; border: 1px solid rgba(118, 184, 255, 0.12); background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018)); }
+    .target-main { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+    .target-name { font-size: 15px; font-weight: 700; line-height: 1.25; word-break: break-word; }
+    .target-meta { margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .platform-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; }
+    .platform-card { padding: 8px; border-radius: 12px; border: 1px solid rgba(118, 184, 255, 0.12); background: rgba(4, 10, 20, 0.38); }
+    .platform-card.is-disabled { opacity: 0.56; }
+    .platform-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .platform-title { margin: 0; font-size: 13px; line-height: 1.2; }
+    .keyword-composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+    .filter-mode-button { min-width: 78px; }
+    .filter-mode-button.is-exclude { color: #ffd7de; border-color: rgba(255, 111, 136, 0.36); background: rgba(255, 111, 136, 0.1); }
+    .rule-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .rule-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(118, 184, 255, 0.2); background: rgba(118, 184, 255, 0.1); color: #dcecff; font-size: 11px; }
+    .rule-tag.exclude { border-color: rgba(255, 111, 136, 0.22); background: rgba(255, 111, 136, 0.1); color: #ffd7de; }
+    .rule-tag button { border: 0; border-radius: 50%; width: 16px; height: 16px; background: rgba(255, 255, 255, 0.12); color: currentColor; cursor: pointer; }
+    .status-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 72px; padding: 5px 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .status-badge.success { color: #b8ffe0; border-color: rgba(52, 211, 153, 0.32); background: rgba(52, 211, 153, 0.12); }
+    .status-badge.failed, .status-badge.error { color: #ffd6de; border-color: rgba(255, 111, 136, 0.32); background: rgba(255, 111, 136, 0.12); }
+    .status-badge.warning { color: #ffe3ba; border-color: rgba(255, 188, 109, 0.3); background: rgba(255, 188, 109, 0.12); }
+    .status-badge.skipped, .status-badge.paused { color: #ffe3ba; border-color: rgba(255, 188, 109, 0.3); background: rgba(255, 188, 109, 0.12); }
+    .toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .empty-state { padding: 16px; text-align: center; color: var(--muted); border-radius: 12px; border: 1px dashed rgba(118, 184, 255, 0.18); background: rgba(255, 255, 255, 0.02); }
     .save-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
     .save-status { min-height: 20px; color: var(--muted); font-size: 13px; }
-    .logs { height: 360px; overflow: auto; border-radius: 16px; border: 1px solid rgba(118, 184, 255, 0.12); background: rgba(4, 10, 20, 0.74); padding: 10px; font-family: var(--font-mono); font-size: 12px; }
-    .log-row { display: grid; grid-template-columns: 180px 90px 170px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 6px 8px; border-radius: 10px; white-space: pre-wrap; word-break: break-word; }
-    .log-row + .log-row { margin-top: 2px; }
-    .log-row:hover { background: rgba(255, 255, 255, 0.03); }
-    .log-time, .log-source { color: #93aad1; }
-    .log-level { font-weight: 700; letter-spacing: 0.06em; }
-    .log-level.info { color: var(--success); }
-    .log-level.warning { color: var(--warning); }
-    .log-level.error, .log-level.critical { color: var(--danger); }
-    .log-level.debug { color: var(--accent-2); }
-    .log-actions { display: flex; justify-content: flex-end; }
-    .log-copy { min-width: 58px; }
+    .log-filter-bar { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border: 1px solid rgba(118, 184, 255, 0.14); border-radius: 10px; background: rgba(4, 10, 20, 0.46); }
+    .log-filter-button { min-height: 28px; padding: 5px 8px; font-size: 12px; border-radius: 8px; }
+    .log-count { min-height: 28px; display: inline-flex; align-items: center; padding: 0 8px; border-radius: 8px; color: var(--muted); background: rgba(255, 255, 255, 0.04); font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
+    .logs { height: 340px; overflow: auto; border-radius: 12px; border: 1px solid rgba(118, 184, 255, 0.12); background: rgba(4, 10, 20, 0.74); padding: 8px; }
+    .log-list { display: flex; flex-direction: column; gap: 7px; }
+    .log-entry { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 10px; border-left: 4px solid rgba(118, 184, 255, 0.42); border-radius: 8px; background: rgba(255, 255, 255, 0.032); }
+    .log-entry.is-error { border-left-color: var(--danger); background: rgba(255, 111, 136, 0.07); }
+    .log-entry.is-warning { border-left-color: var(--warning); background: rgba(255, 188, 109, 0.07); }
+    .log-entry.is-info { border-left-color: var(--accent-2); }
+    .log-entry-level { min-width: 54px; padding: 3px 7px; border-radius: 999px; text-align: center; color: #dcecff; background: rgba(118, 184, 255, 0.12); font-size: 11px; font-weight: 700; line-height: 1.35; }
+    .log-entry.is-error .log-entry-level { color: #ffd6de; background: rgba(255, 111, 136, 0.13); }
+    .log-entry.is-warning .log-entry-level { color: #ffe5bf; background: rgba(255, 188, 109, 0.13); }
+    .log-entry-body { min-width: 0; }
+    .log-entry-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; color: #93aad1; font-family: var(--font-mono); font-size: 11px; line-height: 1.35; }
+    .log-entry-source { color: #b8c7e1; }
+    .log-entry-message { margin-top: 5px; color: #eef5ff; font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
     .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .is-hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     @media (max-width: 1100px) {
-      .hero { grid-template-columns: 1fr; }
-      .hero-toolbar-buttons { flex-wrap: wrap; }
-      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .main-grid { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .main-grid, .settings-grid { grid-template-columns: 1fr; }
     }
-    @media (max-width: 900px) { .target-main { grid-template-columns: minmax(0, 1fr) auto; } }
     @media (max-width: 760px) {
       .shell { width: min(100% - 20px, 100%); }
-      .hero { padding: 16px; }
-      .grid, .target-main, .target-filters, .rule-preview-grid, .log-row, .add-target, .keyword-composer { grid-template-columns: 1fr; }
-      .hero-toolbar-buttons { flex-direction: column; }
-      .hero-toolbar-buttons .button, .save-row .button { width: 100%; }
-      .save-row, .section-head { flex-direction: column; align-items: flex-start; }
-      .kpi-grid { grid-template-columns: 1fr; }
+      .grid, .target-main, .add-target, .platform-grid, .keyword-composer { grid-template-columns: 1fr; }
+      .log-entry { grid-template-columns: 1fr; gap: 6px; }
+      .save-row, .section-head, .platform-head { flex-direction: column; align-items: flex-start; }
+      .status-item { flex-basis: 100%; }
     }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition-duration: 0s !important; } }
   </style>
 </head>
 <body>
   <div class="shell">
-    <div class="hero">
-      <div class="hero-toolbar-buttons" aria-label="操作区">
+    <div class="topbar">
+      <div class="page-tabs" aria-label="页面切换">
+        <button id="pageMonitorButton" class="button is-tab" type="button" aria-selected="true" onclick="setPage('monitor')">X 监控</button>
+        <button id="pageSettingsButton" class="button is-tab" type="button" aria-selected="false" onclick="setPage('settings')">设置</button>
+        <div id="statusHint" class="hint" role="status" aria-live="polite">正在加载...</div>
+      </div>
+      <div id="monitorToolbar" class="toolbar" aria-label="监控操作区">
         <button class="button is-primary" type="button" onclick="startRuntime()">启动</button>
         <button class="button is-danger" type="button" onclick="stopRuntime()">停止</button>
         <button id="restartRuntimeButton" class="button is-warning restart-button" type="button" onclick="restartRuntime()">重启</button>
-        <button class="button" type="button" onclick="refreshAll()">刷新</button>
-        <button class="button" type="button" onclick="testSend()">测试</button>
+        <button class="button" type="button" onclick="testSend()">测试推送</button>
       </div>
     </div>
-    <section id="statusCards" class="kpi-grid" aria-live="polite"></section>
-    <main>
+
+    <section id="monitorPage" class="page active">
+      <section id="statusBar" class="status-bar" aria-live="polite"></section>
+
       <section class="main-grid">
         <div class="card stack-card">
-          <div class="section-head"><div><h2>目标</h2></div><div id="targetSummary" class="muted">0 个目标</div></div>
-          <div class="add-target"><div><label class="sr-only" for="new_target_username">新增监控目标</label><input id="new_target_username" placeholder="输入 X 用户名，例如 elonmusk" autocomplete="off"></div><button class="button is-primary" type="button" onclick="addTarget()">新增目标</button></div>
+          <div class="section-head">
+            <div>
+              <h2>监控目标</h2>
+              <p>新增 X 用户后，为同一个目标选择电报和币安广场平台。</p>
+            </div>
+            <div id="targetSummary" class="muted">0 个目标</div>
+          </div>
+          <div class="add-target">
+            <div>
+              <label class="sr-only" for="new_target_username">新增监控目标</label>
+              <input id="new_target_username" placeholder="输入 X 用户名，例如 elonmusk" autocomplete="off">
+            </div>
+            <button class="button is-primary" type="button" onclick="addTarget()">新增</button>
+          </div>
           <div id="targetList" class="target-list"></div>
         </div>
+
+      </section>
+
+      <section class="card stack-card" aria-labelledby="logsTitle">
+        <div class="section-head">
+          <div><h2 id="logsTitle">日志终端</h2></div>
+          <div class="log-tools">
+            <div class="log-filter-bar" aria-label="日志筛选">
+              <button class="button log-filter-button" type="button" data-log-filter="all" aria-selected="true" onclick="setLogFilter('all')">全部</button>
+              <button class="button log-filter-button" type="button" data-log-filter="error" aria-selected="false" onclick="setLogFilter('error')">错误</button>
+              <button class="button log-filter-button" type="button" data-log-filter="warning" aria-selected="false" onclick="setLogFilter('warning')">警告</button>
+              <button class="button log-filter-button" type="button" data-log-filter="info" aria-selected="false" onclick="setLogFilter('info')">信息</button>
+            </div>
+            <span id="logCount" class="log-count">0 / 0</span>
+            <label class="toggle"><input id="autoScroll" type="checkbox" checked>自动滚动到底部</label>
+            <button class="button" type="button" onclick="refreshAll()">刷新日志</button>
+            <button class="button is-danger" type="button" onclick="clearLogs()">清空日志</button>
+          </div>
+        </div>
+        <div id="logs" class="logs" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <section id="settingsPage" class="page">
+      <section class="settings-grid">
         <div class="card stack-card">
-          <div class="section-head"><div><h2>设置</h2></div></div>
-          <div class="tab-list" role="tablist" aria-label="配置分类">
-            <button id="tab-rules" class="button is-tab active" type="button" role="tab" aria-selected="true" aria-controls="panel-rules" tabindex="0" data-tab="rules">监控</button>
-            <button id="tab-push" class="button is-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-push" tabindex="-1" data-tab="push">推送</button>
+          <div class="section-head"><div><h2>X 采集设置</h2><p>配置轮询和 X 登录信息。</p></div></div>
+          <div class="grid">
+            <div class="field"><label for="twitter_poll_interval_sec">轮询间隔（秒）</label><input id="twitter_poll_interval_sec" type="number" min="10" inputmode="numeric"></div>
+            <div class="field"><label for="twitter_fetch_limit">每次抓取条数</label><input id="twitter_fetch_limit" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="twitter_bootstrap_drop_existing">首次启动跳过历史推文</label><label class="switch-field" for="twitter_bootstrap_drop_existing"><input id="twitter_bootstrap_drop_existing" class="switch-input" type="checkbox"><span class="switch-slider" aria-hidden="true"></span><span class="switch-copy">开启后首次运行只记录历史推文，不发送通知</span></label></div>
+            <div class="field"><label for="twikit_username">X 用户名</label><input id="twikit_username" autocomplete="username" placeholder="例如 your_x_username"></div>
+            <div class="field"><label for="twikit_email">X 邮箱（可选）</label><input id="twikit_email" type="email" autocomplete="email" placeholder="例如 you@example.com"></div>
+            <div class="field"><label for="twikit_password">X 密码</label><div class="secret-input"><input id="twikit_password" type="password" autocomplete="current-password" placeholder="输入 X 登录密码"><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="twikit_password">显示</button></div></div>
+            <div class="field"><label for="twikit_cookies_file">X Cookies 文件</label><input id="twikit_cookies_file" placeholder="例如 .twikit_cookies.json"></div>
           </div>
-          <div id="panel-rules" class="tab-panel active" data-panel="rules" role="tabpanel" aria-labelledby="tab-rules">
-            <div class="grid">
-              <div><label for="twitter_provider">推文来源</label><select id="twitter_provider"><option value="mock">本地测试</option><option value="twikit">真实抓取</option></select></div>
-              <div><label for="twitter_poll_interval_sec">轮询间隔（秒）</label><input id="twitter_poll_interval_sec" type="number" min="10" inputmode="numeric"></div>
-              <div><label for="twitter_fetch_limit">每次抓取条数</label><input id="twitter_fetch_limit" type="number" min="1" inputmode="numeric"></div>
-              <div><label for="twitter_bootstrap_drop_existing">首次启动跳过历史推文</label><select id="twitter_bootstrap_drop_existing"><option value="true">是</option><option value="false">否</option></select></div>
-              <div><label for="twikit_username">X 用户名</label><input id="twikit_username" autocomplete="username"></div>
-              <div><label for="twikit_email">X 邮箱（可选）</label><input id="twikit_email" type="email" autocomplete="email"></div>
-              <div><label for="twikit_password">X 密码</label><div class="secret-row"><input id="twikit_password" type="password" autocomplete="current-password"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="twikit_password">显示</button></div></div>
-              <div><label for="twikit_cookies_file">X Cookies 文件</label><input id="twikit_cookies_file"></div>
-            </div>
+        </div>
+
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>电报设置</h2><p>电报是给自己看的通知通道，目标内可单独配置关键词。</p></div></div>
+          <div class="grid">
+            <div class="field"><label for="telegram_bot_token">电报 Bot Token</label><div class="secret-input"><input id="telegram_bot_token" type="password" autocomplete="off" placeholder="例如 123456:ABCDEF..."><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="telegram_bot_token">显示</button></div></div>
+            <div class="field"><label for="telegram_chat_id">电报 Chat ID</label><input id="telegram_chat_id" type="text" autocomplete="off" placeholder="例如 123456789 或 -1001234567890"></div>
           </div>
-          <div id="panel-push" class="tab-panel" data-panel="push" role="tabpanel" aria-labelledby="tab-push" hidden>
-            <div class="grid">
-              <div><label for="telegram_bot_token">Telegram Bot Token</label><div class="secret-row"><input id="telegram_bot_token" type="password" autocomplete="off"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="telegram_bot_token">显示</button></div></div>
-              <div><label for="telegram_chat_id">Telegram Chat ID</label><div class="secret-row"><input id="telegram_chat_id" type="password" autocomplete="off"><button class="button is-small" type="button" aria-pressed="false" data-toggle-secret="telegram_chat_id">显示</button></div></div>
-              <div><label for="dry_run">推送模式</label><select id="dry_run"><option value="false">正式推送</option><option value="true">仅演练，不发送</option></select></div>
-            </div>
+        </div>
+
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>币安广场设置</h2><p>币安广场当前使用公开纯文本发文接口。</p></div></div>
+          <div class="grid">
+            <div class="field"><label for="binance_publish_template">币安广场发布模板</label><select id="binance_publish_template"><option value="plain_with_link">正文 + 原推链接</option><option value="plain">仅正文</option></select></div>
+            <div class="field" style="grid-column:1 / -1;"><label for="binance_square_api_key">币安广场 API Key</label><div class="secret-input"><input id="binance_square_api_key" type="password" autocomplete="off" placeholder="输入币安广场 API Key"><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="binance_square_api_key">显示</button></div></div>
+            <div class="field"><label for="binance_retry_max_attempts">币安广场重试次数</label><input id="binance_retry_max_attempts" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="binance_retry_base_delay_sec">币安广场重试延迟（秒）</label><input id="binance_retry_base_delay_sec" type="number" min="0.1" step="0.1" inputmode="decimal"></div>
           </div>
-          <div class="save-row"><button id="saveConfigButton" class="button is-primary" type="button" onclick="saveConfig()">保存配置</button><div id="saveStatus" class="save-status" role="status" aria-live="polite"></div></div>
+        </div>
+
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>运行与存储</h2><p>去重状态用于采集，平台推送状态用于避免币安广场重复发文。</p></div></div>
+          <div class="grid">
+            <div class="field"><label for="dedup_file">去重文件</label><input id="dedup_file"></div>
+            <div class="field"><label for="dedup_max_ids">去重保留数</label><input id="dedup_max_ids" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="delivery_status_file">平台推送状态文件</label><input id="delivery_status_file"></div>
+            <div class="field"><label for="delivery_status_max_records">平台状态保留数</label><input id="delivery_status_max_records" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="retry_max_attempts">电报重试次数</label><input id="retry_max_attempts" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="retry_base_delay_sec">电报重试延迟（秒）</label><input id="retry_base_delay_sec" type="number" min="0.1" step="0.1" inputmode="decimal"></div>
+            <div class="field"><label for="log_level">日志级别</label><select id="log_level"><option value="DEBUG">DEBUG</option><option value="INFO">INFO</option><option value="WARNING">WARNING</option><option value="ERROR">ERROR</option></select></div>
+          </div>
         </div>
       </section>
-      <section class="card stack-card" aria-labelledby="logsTitle">
-        <div class="section-head"><div><h2 id="logsTitle">日志终端</h2></div><div class="log-tools"><label class="toggle"><input id="autoScroll" type="checkbox" checked>自动滚动到底部</label><button class="button" type="button" onclick="refreshAll()">刷新日志</button><button class="button is-danger" type="button" onclick="clearLogs()">清空日志</button></div></div>
-        <div id="logs" class="logs" role="log" aria-live="polite" aria-relevant="additions text"></div>
-      </section>
-    </main>
+      <div class="save-row">
+        <button id="saveConfigButton" class="button is-primary" type="button" onclick="saveConfig()">保存设置</button>
+        <div id="saveStatus" class="save-status" role="status" aria-live="polite"></div>
+      </div>
+    </section>
   </div>
+
   <script>
-    const fields=["twitter_provider","twitter_poll_interval_sec","twitter_fetch_limit","twitter_bootstrap_drop_existing","dry_run","telegram_bot_token","telegram_chat_id","twikit_username","twikit_email","twikit_password","twikit_cookies_file"];
-    let monitorTargets=[]; let targetRuntimeState={}; let refreshTimer=null; let keywordAutoSaveTimer=null; let keywordAutoSaveSeq=0; let currentRuntimeRunning=false; let restartAttention=false;
-    async function api(path, method="GET", body=null){ const resp=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):null}); const data=await resp.json(); if(!resp.ok) throw new Error(data.detail||"request failed"); return data; }
-    function setHint(message, tone="info"){ const hint=document.getElementById("hint"); if(!hint) return; hint.textContent=message; hint.className=`hint ${tone==="success"?"is-success":tone==="error"?"is-error":tone==="warning"?"is-warning":""}`.trim(); }
-    function syncHintWithRuntime(data, force=false){ const hint=document.getElementById("hint"); if(!hint) return; const currentText=hint.textContent||""; const nextText=data.running?"监控运行中":"监控未启动"; const nextTone=data.running?"success":"warning"; const isInitialHint=currentText==="状态加载中..."||currentText==="正在获取状态..."; if(force||isInitialHint) setHint(nextText,nextTone); }
-    function setSaveStatus(message){ const saveStatus=document.getElementById("saveStatus"); if(saveStatus) saveStatus.textContent=message; }
-    function setSaveButtonBusy(isBusy){ const button=document.getElementById("saveConfigButton"); if(!button) return; button.disabled=isBusy; button.setAttribute("aria-busy", isBusy?"true":"false"); button.textContent=isBusy?"保存中...":"保存配置"; button.style.opacity=isBusy?"0.7":"1"; button.style.cursor=isBusy?"wait":"pointer"; }
-    function updateRestartButtonState(){ const button=document.getElementById("restartRuntimeButton"); if(!button) return; const needsAttention=currentRuntimeRunning&&restartAttention; button.classList.toggle("needs-attention",needsAttention); button.textContent="重启"; button.title=needsAttention?"配置已保存，点击这里重启监控":"重新启动当前监控实例"; }
-    function markRestartRequired(){ restartAttention=true; updateRestartButtonState(); }
-    function buildMonitorTargetsPayload(){ return { monitor_targets: normalizeTargets(monitorTargets) }; }
-    function formatTime(value){ if(!value) return "暂无"; const date=new Date(value); if(Number.isNaN(date.getTime())) return String(value); return date.toLocaleString("zh-CN",{hour12:false}); }
-    function normalizeFilterExpression(raw){ const text=Array.isArray(raw)?raw.join(","):String(raw||""); const clauses=[]; for(const clause of text.replace(/\r/g,"\n").replace(/\n/g,",").split(",")){ const parts=clause.split("+").map((part)=>String(part||"").trim()).filter(Boolean); if(!parts.length) continue; clauses.push(parts.join("+")); } return clauses.join(","); }
-    function parseFilterClauses(raw){ const normalized=normalizeFilterExpression(raw); if(!normalized) return []; return normalized.split(",").map((clause)=>clause.split("+").map((part)=>part.trim()).filter(Boolean)).filter((parts)=>parts.length); }
-    function getFilterClauses(raw){ const normalized=normalizeFilterExpression(raw); return normalized?normalized.split(",").map((clause)=>clause.trim()).filter(Boolean):[]; }
-    function removeFilterClause(target, kind, clauseIndex){ const key=kind==="include"?"include_keywords":"exclude_keywords"; const clauses=getFilterClauses(target[key]); clauses.splice(clauseIndex,1); target[key]=clauses.join(","); }
-    function addFilterClause(target, kind, rawValue){ const key=kind==="include"?"include_keywords":"exclude_keywords"; const value=normalizeFilterExpression(rawValue); if(!value) return { ok:false, message:"请输入关键词" }; const clauses=getFilterClauses(target[key]); const exists=clauses.some((item)=>item.toLowerCase()===value.toLowerCase()); if(exists) return { ok:false, message:"该关键词已存在" }; clauses.push(value); target[key]=clauses.join(","); return { ok:true }; }
-    function createRulePreviewBlock(labelText, clauses, emptyText, tone="include", onRemove=null){ const block=document.createElement("div"); block.className="rule-preview-block"; const label=document.createElement("div"); label.className="rule-preview-label"; label.textContent=labelText; block.appendChild(label); if(!clauses.length){ const empty=document.createElement("div"); empty.className="rule-preview-empty"; empty.textContent=emptyText; block.appendChild(empty); return block; } const tags=document.createElement("div"); tags.className="rule-preview-tags"; clauses.forEach((parts,index)=>{ const tag=document.createElement("div"); tag.className=`rule-tag${tone==="exclude"?" exclude":""}`; const text=document.createElement("span"); text.className="rule-tag-text"; text.textContent=parts.length>1?parts.join(" + "):parts[0]; tag.appendChild(text); if(onRemove){ const removeButton=document.createElement("button"); removeButton.type="button"; removeButton.className="rule-tag-remove"; removeButton.textContent="×"; removeButton.addEventListener("click",()=>onRemove(index)); tag.appendChild(removeButton); } tags.appendChild(tag); }); block.appendChild(tags); return block; }
-    function createRulePreview(target, onRemoveClause){ const includeClauses=parseFilterClauses(target.include_keywords); const excludeClauses=parseFilterClauses(target.exclude_keywords); const preview=document.createElement("div"); preview.className="rule-preview"; const title=document.createElement("div"); title.className="rule-preview-title"; title.textContent="当前生效"; preview.appendChild(title); const grid=document.createElement("div"); grid.className="rule-preview-grid"; grid.append(createRulePreviewBlock("包含关键词",includeClauses,"未设置包含关键词时，将匹配该目标的全部推文。","include", onRemoveClause ? (clauseIndex)=>onRemoveClause("include", clauseIndex) : null),createRulePreviewBlock("排除关键词",excludeClauses,"未设置排除关键词时，不会额外拦截推文。","exclude", onRemoveClause ? (clauseIndex)=>onRemoveClause("exclude", clauseIndex) : null)); preview.appendChild(grid); const footnote=document.createElement("div"); footnote.className="rule-preview-footnote"; footnote.textContent="输入一个词后，点击“添加包含”或“添加排除”，下方列表会立即显示生效项。"; preview.appendChild(footnote); return preview; }
-    function refreshRulePreview(preview,target){ const nextPreview=createRulePreview(target); preview.replaceWith(nextPreview); return nextPreview; }
-    function normalizeTargets(rawTargets){ const seen=new Set(); const targets=[]; for(const item of Array.isArray(rawTargets)?rawTargets:[]){ const username=String(item.username||"").trim(); if(!username) continue; const key=username.toLowerCase(); if(seen.has(key)) continue; seen.add(key); targets.push({ username, enabled:item.enabled!==false, include_keywords:normalizeFilterExpression(item.include_keywords), exclude_keywords:normalizeFilterExpression(item.exclude_keywords) }); } return targets; }
-    async function copyText(text){ const value=String(text||""); if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(value); return; } const helper=document.createElement("textarea"); helper.value=value; helper.setAttribute("readonly","readonly"); helper.style.position="fixed"; helper.style.opacity="0"; document.body.appendChild(helper); helper.focus(); helper.select(); const ok=document.execCommand("copy"); document.body.removeChild(helper); if(!ok) throw new Error("浏览器不支持剪贴板复制"); }
-    function scheduleKeywordAutoSave(username,kind){ if(keywordAutoSaveTimer) clearTimeout(keywordAutoSaveTimer); setSaveStatus(`@${username} 的${kind}关键词修改后将自动保存...`); keywordAutoSaveTimer=setTimeout(()=>{ void autoSaveKeywordFilters(username,kind); },800); }
-    async function autoSaveKeywordFilters(username,kind){ const requestId=++keywordAutoSaveSeq; try{ await api("/api/config","POST",buildMonitorTargetsPayload()); if(requestId!==keywordAutoSaveSeq) return; const nowText=new Date().toLocaleTimeString("zh-CN",{hour12:false}); if(currentRuntimeRunning){ markRestartRequired(); setHint("关键词已自动保存，顶部“重启监控”按钮已高亮，点击后生效。","success"); }else{ setHint("关键词已自动保存。监控下次启动时会加载新配置。","success"); } setSaveStatus(`@${username} 的${kind}关键词已自动保存，时间 ${nowText}`); }catch(err){ if(requestId!==keywordAutoSaveSeq) return; setHint(err.message||"关键词自动保存失败","error"); setSaveStatus(`@${username} 的${kind}关键词自动保存失败：${err.message||"未知错误"}`); } }
-    function isEditingTargetInputs(){ const active=document.activeElement; if(!active) return false; if(active.id==="new_target_username") return true; const targetList=document.getElementById("targetList"); if(!targetList||!targetList.contains(active)) return false; return active.tagName==="TEXTAREA"||active.tagName==="INPUT"||active.tagName==="SELECT"; }
-    function syncRuntimeTargets(items){ const nextState={}; for(const item of Array.isArray(items)?items:[]) nextState[String(item.username||"").toLowerCase()]=item; targetRuntimeState=nextState; }
-    function renderStatus(data){ currentRuntimeRunning=Boolean(data.running); updateRestartButtonState(); syncHintWithRuntime(data); const statusCards=document.getElementById("statusCards"); const cards=[{label:"运行状态",value:data.running?"运行中":"已停止",sub:data.running?"实例正在持续轮询抓取":"当前未执行轮询任务",live:true},{label:"已采集",value:String(data.collected_count||0),sub:"累计进入处理链路的推文数"},{label:"已发送",value:String(data.sent_count||0),sub:"累计成功推送到 Telegram"},{label:"失败数",value:String(data.failed_count||0),sub:data.last_error?`最近错误：${data.last_error}`:"当前没有新的错误摘要"},{label:"最近轮询",value:formatTime(data.last_loop_at),sub:data.started_at?`启动于 ${formatTime(data.started_at)}`:"尚未启动"}]; statusCards.innerHTML=""; for(const card of cards){ const el=document.createElement("div"); el.className="kpi-card"; const label=document.createElement("div"); label.className="kpi-label"; label.textContent=card.label; el.appendChild(label); const value=document.createElement("div"); value.className="kpi-value"; if(card.live){ const live=document.createElement("div"); live.className="status-live"; const dot=document.createElement("span"); dot.className=`status-dot ${data.running?"running":""}`.trim(); const text=document.createElement("span"); text.textContent=card.value; live.append(dot,text); value.appendChild(live);}else{ value.textContent=card.value; } el.appendChild(value); const sub=document.createElement("div"); sub.className="kpi-sub"; sub.textContent=card.sub; el.appendChild(sub); statusCards.appendChild(el); } }
-    function renderTargetList(){ const targetList=document.getElementById("targetList"); const targetSummary=document.getElementById("targetSummary"); const enabledCount=monitorTargets.filter((item)=>item.enabled).length; targetSummary.textContent=`${monitorTargets.length} 个目标 / ${enabledCount} 个启用中`; targetList.innerHTML=""; if(!monitorTargets.length){ const empty=document.createElement("div"); empty.className="empty-state"; empty.textContent="还没有监控目标。新增一个用户名后保存配置，即可开始精细化管理。"; targetList.appendChild(empty); return; }
-      monitorTargets.forEach((target,index)=>{ const runtime=targetRuntimeState[target.username.toLowerCase()]||{}; const row=document.createElement("div"); row.className="target-row"; const main=document.createElement("div"); main.className="target-main"; const meta=document.createElement("div"); const title=document.createElement("div"); title.className="target-name"; title.textContent=`@${target.username}`; const detail=document.createElement("div"); detail.className="target-meta"; detail.textContent=runtime.last_error?`最近错误：${runtime.last_error}`:`最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count||0} 条`; meta.append(title,detail); const badge=document.createElement("div"); const status=!target.enabled?"paused":runtime.last_fetch_status||"idle"; badge.className=`status-badge ${status}`; badge.textContent=status==="success"?"抓取成功":status==="error"?"抓取失败":status==="paused"?"已暂停":"等待中"; const toggle=document.createElement("label"); toggle.className="toggle"; const checkbox=document.createElement("input"); checkbox.type="checkbox"; checkbox.checked=Boolean(target.enabled); checkbox.addEventListener("change",()=>{ monitorTargets[index].enabled=checkbox.checked; renderTargetList(); setHint("目标开关已更新，记得保存配置。","warning"); }); const toggleText=document.createElement("span"); toggleText.textContent=target.enabled?"启用":"暂停"; toggle.append(checkbox,toggleText); const actions=document.createElement("div"); actions.className="row-actions"; const removeButton=document.createElement("button"); removeButton.className="button is-small is-danger"; removeButton.type="button"; removeButton.textContent="移除"; removeButton.addEventListener("click",()=>{ monitorTargets.splice(index,1); renderTargetList(); setHint("目标已移除，记得保存配置。","warning"); }); actions.appendChild(removeButton); main.append(meta,badge,toggle,actions); const filters=document.createElement("div"); filters.className="field"; const keywordLabel=document.createElement("label"); keywordLabel.textContent="关键词"; const composer=document.createElement("div"); composer.className="keyword-composer"; const keywordInput=document.createElement("input"); keywordInput.type="text"; keywordInput.placeholder="输入一个关键词，例如空投 或 spam + 广告"; const addIncludeButton=document.createElement("button"); addIncludeButton.type="button"; addIncludeButton.className="button is-primary"; addIncludeButton.textContent="添加包含"; const addExcludeButton=document.createElement("button"); addExcludeButton.type="button"; addExcludeButton.className="button is-danger"; addExcludeButton.textContent="添加排除"; let rulePreview=createRulePreview(target,(kind,clauseIndex)=>{ removeFilterClause(monitorTargets[index],kind,clauseIndex); renderTargetList(); scheduleKeywordAutoSave(target.username,kind==="include"?"包含":"排除"); setHint(kind==="include"?"包含关键词已移除。":"排除关键词已移除。","warning"); }); const addClause=(kind)=>{ const result=addFilterClause(monitorTargets[index],kind,keywordInput.value); if(!result.ok){ setHint(result.message,"warning"); return; } keywordInput.value=""; renderTargetList(); scheduleKeywordAutoSave(target.username,kind==="include"?"包含":"排除"); setHint(kind==="include"?"包含关键词已加入。":"排除关键词已加入。","success"); }; addIncludeButton.addEventListener("click",()=>addClause("include")); addExcludeButton.addEventListener("click",()=>addClause("exclude")); keywordInput.addEventListener("keydown",(event)=>{ if(event.key==="Enter"){ event.preventDefault(); addClause("include"); } }); composer.append(keywordInput,addIncludeButton,addExcludeButton); filters.append(keywordLabel,composer,rulePreview); row.append(main,filters); targetList.appendChild(row); }); }
-    function parseLogLine(line){ const matched=String(line||"").match(/^(.*?) \| ([A-Z]+) \| (.*?) \| (.*)$/); if(!matched){ return { time:"", level:"INFO", source:"runtime", message:String(line||""), raw:String(line||"") }; } return { time:matched[1], level:matched[2], source:matched[3], message:matched[4], raw:String(line||"") }; }
-    function renderLogs(lines){ const logs=document.getElementById("logs"); const shouldStick=document.getElementById("autoScroll").checked; const previousScrollTop=logs.scrollTop; logs.innerHTML=""; const entries=Array.isArray(lines)?lines:[]; if(!entries.length){ const empty=document.createElement("div"); empty.className="empty-state"; empty.textContent="当前还没有日志输出。"; logs.appendChild(empty); } for(const line of entries){ const parsed=parseLogLine(line); const row=document.createElement("div"); row.className="log-row"; const time=document.createElement("div"); time.className="log-time"; time.textContent=parsed.time||"--"; const level=document.createElement("div"); level.className=`log-level ${parsed.level.toLowerCase()}`; level.textContent=parsed.level; const source=document.createElement("div"); source.className="log-source"; source.textContent=parsed.source; const message=document.createElement("div"); message.className="log-message"; message.textContent=parsed.message; const actions=document.createElement("div"); actions.className="log-actions"; const copyButton=document.createElement("button"); copyButton.className="button is-small log-copy"; copyButton.type="button"; copyButton.textContent="复制"; copyButton.addEventListener("click",async()=>{ try{ await copyText(parsed.raw); setHint("已复制该条日志。","success"); }catch(err){ setHint(err.message||"复制失败","error"); } }); actions.appendChild(copyButton); row.append(time,level,source,message,actions); logs.appendChild(row); } if(shouldStick){ logs.scrollTop=logs.scrollHeight; } else { logs.scrollTop=previousScrollTop; } }
-    async function loadConfig(){ const config=await api("/api/config"); for(const key of fields){ const element=document.getElementById(key); if(!element) continue; element.value=String(config[key]??""); } monitorTargets=normalizeTargets(config.monitor_targets); renderTargetList(); }
-    function buildPayload(){ const payload={}; for(const key of fields){ const element=document.getElementById(key); if(!element) continue; payload[key]=element.value; } payload.monitor_targets=normalizeTargets(monitorTargets); payload.twitter_poll_interval_sec=Number(payload.twitter_poll_interval_sec||60); payload.twitter_fetch_limit=Number(payload.twitter_fetch_limit||5); payload.twitter_bootstrap_drop_existing=payload.twitter_bootstrap_drop_existing==="true"; payload.dry_run=payload.dry_run==="true"; return payload; }
-    async function saveConfig(){ try{ setSaveButtonBusy(true); setHint("正在保存配置...","info"); setSaveStatus("正在写入配置..."); await api("/api/config","POST",buildPayload()); await loadConfig(); await refreshAll(); const nowText=new Date().toLocaleTimeString("zh-CN",{hour12:false}); if(currentRuntimeRunning){ markRestartRequired(); setHint("右侧配置已保存，顶部“重启监控”按钮已高亮，点击后应用新配置。","success"); }else{ setHint("右侧配置已保存。监控下次启动时会自动加载新配置。","success"); } setSaveStatus(`保存成功，时间 ${nowText}`); }catch(err){ setHint(err.message||"保存失败","error"); setSaveStatus(`保存失败：${err.message||"未知错误"}`); } finally { setSaveButtonBusy(false); } }
-    async function startRuntime(){ const data=await api("/api/start","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已启动。顶部状态卡与目标列表会持续刷新。","success"); }
-    async function stopRuntime(){ const data=await api("/api/stop","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已停止。你现在可以安全修改目标和配置。","warning"); }
-    async function restartRuntime(){ const data=await api("/api/restart","POST"); restartAttention=false; renderStatus(data); syncRuntimeTargets(data.monitor_targets||[]); renderTargetList(); setHint("监控已重启。新的目标和规则已经重新加载。","success"); }
-    async function testSend(){ const data=await api("/api/test-send","POST"); setHint(data.ok?"测试发送成功。":"测试发送失败，请检查推送设置。", data.ok?"success":"error"); }
-    async function clearLogs(){ await api("/api/logs/clear","POST"); renderLogs([]); setHint("日志缓存已清空。","success"); }
-    async function refreshAll(){ try{ const [status,logs]=await Promise.all([api("/api/status"), api("/api/logs")]); renderStatus(status); syncRuntimeTargets(status.monitor_targets||[]); if(!isEditingTargetInputs()) renderTargetList(); renderLogs(logs.lines||[]); }catch(err){ setHint(err.message||"刷新失败","error"); } }
-    function addTarget(){ const input=document.getElementById("new_target_username"); const username=input.value.trim(); if(!username){ setHint("请输入有效的 X 用户名。","warning"); return; } const exists=monitorTargets.some((item)=>item.username.toLowerCase()===username.toLowerCase()); if(exists){ setHint("该目标已经存在，不需要重复添加。","warning"); return; } monitorTargets.push({ username, enabled:true, include_keywords:"", exclude_keywords:"" }); input.value=""; renderTargetList(); setHint("目标已加入列表，记得保存配置。","warning"); }
-    function initTabs(){ const buttons=Array.from(document.querySelectorAll("[data-tab]")); const panels=Array.from(document.querySelectorAll("[data-panel]")); const selectTab=(selectedButton,moveFocus=false)=>{ const selected=selectedButton.dataset.tab; buttons.forEach((item)=>{ const active=item===selectedButton; item.classList.toggle("active",active); item.setAttribute("aria-selected", active?"true":"false"); item.setAttribute("tabindex", active?"0":"-1"); }); panels.forEach((panel)=>{ const active=panel.dataset.panel===selected; panel.classList.toggle("active",active); panel.hidden=!active; }); if(moveFocus) selectedButton.focus(); }; buttons.forEach((button)=>{ button.addEventListener("click",()=>{ selectTab(button); }); button.addEventListener("keydown",(event)=>{ const currentIndex=buttons.indexOf(button); if(currentIndex===-1) return; let nextIndex=currentIndex; if(event.key==="ArrowRight"||event.key==="ArrowDown") nextIndex=(currentIndex+1)%buttons.length; else if(event.key==="ArrowLeft"||event.key==="ArrowUp") nextIndex=(currentIndex-1+buttons.length)%buttons.length; else if(event.key==="Home") nextIndex=0; else if(event.key==="End") nextIndex=buttons.length-1; else return; event.preventDefault(); selectTab(buttons[nextIndex],true); }); }); const activeButton=buttons.find((button)=>button.classList.contains("active"))||buttons[0]; if(activeButton) selectTab(activeButton); }
-    function initSecrets(){ const buttons=Array.from(document.querySelectorAll("[data-toggle-secret]")); buttons.forEach((button)=>{ button.addEventListener("click",()=>{ const input=document.getElementById(button.dataset.toggleSecret); if(!input) return; input.type=input.type==="password"?"text":"password"; button.textContent=input.type==="password"?"显示":"隐藏"; button.setAttribute("aria-pressed", input.type==="text"?"true":"false"); }); }); }
-    function initTargetInput(){ const input=document.getElementById("new_target_username"); input.addEventListener("keydown",(event)=>{ if(event.key==="Enter"){ event.preventDefault(); addTarget(); } }); }
-    async function boot(){ try{ initTabs(); initSecrets(); initTargetInput(); await loadConfig(); await refreshAll(); refreshTimer=setInterval(()=>{ if(!document.hidden) void refreshAll(); },3000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) void refreshAll(); }); setSaveStatus("配置已加载。修改后可直接保存。"); }catch(err){ setHint(err.message||"初始化失败","error"); } }
+    const fields = [
+      "twitter_poll_interval_sec",
+      "twitter_fetch_limit",
+      "twitter_bootstrap_drop_existing",
+      "twikit_username",
+      "twikit_email",
+      "twikit_password",
+      "twikit_cookies_file",
+      "telegram_bot_token",
+      "telegram_chat_id",
+      "binance_square_api_key",
+      "binance_publish_template",
+      "binance_retry_max_attempts",
+      "binance_retry_base_delay_sec",
+      "delivery_status_file",
+      "delivery_status_max_records",
+      "dedup_file",
+      "dedup_max_ids",
+      "retry_max_attempts",
+      "retry_base_delay_sec",
+      "log_level",
+    ];
+    let currentPage = "monitor";
+    let monitorTargets = [];
+    let targetRuntimeState = {};
+    let deliverySummary = {};
+    let currentRuntimeRunning = false;
+    let restartAttention = false;
+    let refreshTimer = null;
+    let currentLogFilter = "all";
+    let latestLogLines = [];
+    const keywordDrafts = {};
+    let targetListEditUntil = 0;
+    let autosaveTimer = null;
+    let autosaveInFlight = false;
+    let autosaveQueued = false;
+    const fallbackPlatforms = [
+      { platform: "telegram", label: "电报", default_enabled: true, persists_delivery: false },
+      { platform: "binance_square", label: "币安广场", default_enabled: false, persists_delivery: true },
+    ];
+    let availablePlatforms = fallbackPlatforms.map((item) => ({ ...item }));
+
+    async function api(path, method = "GET", body = null) {
+      const options = { method, headers: { "Content-Type": "application/json" } };
+      if (body !== null) options.body = JSON.stringify(body);
+      const response = await fetch(path, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || data.message || "请求失败");
+      return data;
+    }
+
+    function setHint(message, tone = "info") {
+      const hint = document.getElementById("statusHint");
+      hint.className = `hint${tone === "success" ? " is-success" : tone === "warning" ? " is-warning" : tone === "error" ? " is-error" : ""}`;
+      hint.textContent = message;
+    }
+
+    function setSaveStatus(message) {
+      document.getElementById("saveStatus").textContent = message || "";
+    }
+
+    function setSaveButtonBusy(isBusy) {
+      const button = document.getElementById("saveConfigButton");
+      if (!button) return;
+      button.disabled = isBusy;
+      button.textContent = isBusy ? "保存中..." : "保存设置";
+    }
+
+    function setConfigBusy(isBusy) {
+      setSaveButtonBusy(isBusy);
+    }
+
+    function formatTime(value) {
+      if (!value) return "暂无";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("zh-CN", { hour12: false });
+    }
+
+    function normalizeFilterExpression(raw) {
+      if (raw === null || raw === undefined) return "";
+      const rawText = Array.isArray(raw) ? raw.join(",") : String(raw);
+      return rawText.replace(/\r/g, "\n").replace(/\n/g, ",").split(",")
+        .map((clause) => clause.split("+").map((part) => part.trim()).filter(Boolean).join("+"))
+        .filter(Boolean)
+        .join(",");
+    }
+
+    function normalizePlatformDefinitions(rawPlatforms) {
+      const normalized = [];
+      const seen = new Set();
+      for (const item of Array.isArray(rawPlatforms) ? rawPlatforms : []) {
+        if (!item || typeof item !== "object") continue;
+        const platform = String(item.platform || "").trim();
+        if (!platform || seen.has(platform)) continue;
+        seen.add(platform);
+        normalized.push({
+          platform,
+          label: platformDisplayName(platform, item.label),
+          default_enabled: item.default_enabled === true,
+          persists_delivery: item.persists_delivery === true,
+        });
+      }
+      return normalized.length ? normalized : fallbackPlatforms.map((item) => ({ ...item }));
+    }
+
+    function platformDisplayName(platform, fallback = "") {
+      if (platform === "telegram") return "电报";
+      if (platform === "binance_square") return "币安广场";
+      return String(fallback || platform);
+    }
+
+    function routeDefaultEnabled(platform) {
+      const matched = availablePlatforms.find((item) => item.platform === platform);
+      return matched ? matched.default_enabled === true : false;
+    }
+
+    function createPlatformRoute(raw = {}, defaultEnabled = false) {
+      return {
+        enabled: raw.enabled === undefined ? defaultEnabled : raw.enabled !== false,
+        include_keywords: normalizeFilterExpression(raw.include_keywords),
+        exclude_keywords: normalizeFilterExpression(raw.exclude_keywords),
+      };
+    }
+
+    function createTarget(username) {
+      const platforms = {};
+      for (const item of availablePlatforms) {
+        platforms[item.platform] = createPlatformRoute({ enabled: item.default_enabled }, item.default_enabled);
+      }
+      return {
+        username,
+        enabled: true,
+        platforms,
+      };
+    }
+
+    function normalizeTarget(item) {
+      const username = String(item.username || "").trim();
+      const platforms = item.platforms && typeof item.platforms === "object" ? item.platforms : {};
+      const alert = item.alert && typeof item.alert === "object" ? item.alert : {};
+      const publish = item.publish && typeof item.publish === "object" ? item.publish : {};
+      const legacyBinance = publish.binance_square && typeof publish.binance_square === "object" ? publish.binance_square : {};
+      const normalizedPlatforms = {};
+      for (const definition of availablePlatforms) {
+        normalizedPlatforms[definition.platform] = createPlatformRoute(platforms[definition.platform], definition.default_enabled);
+      }
+      for (const [platform, rawRoute] of Object.entries(platforms)) {
+        if (normalizedPlatforms[platform]) continue;
+        normalizedPlatforms[platform] = createPlatformRoute(rawRoute, routeDefaultEnabled(platform));
+      }
+      if (!platforms.telegram && (alert.include_keywords !== undefined || alert.exclude_keywords !== undefined || alert.enabled !== undefined || item.include_keywords !== undefined || item.exclude_keywords !== undefined)) {
+        normalizedPlatforms.telegram = createPlatformRoute({
+          enabled: alert.enabled !== false,
+          include_keywords: alert.include_keywords ?? item.include_keywords,
+          exclude_keywords: alert.exclude_keywords ?? item.exclude_keywords,
+        }, routeDefaultEnabled("telegram"));
+      }
+      if (!platforms.binance_square && Object.keys(publish).length) {
+        normalizedPlatforms.binance_square = createPlatformRoute({
+          enabled: legacyBinance.enabled ?? publish.enabled ?? false,
+          include_keywords: legacyBinance.include_keywords ?? publish.include_keywords,
+          exclude_keywords: legacyBinance.exclude_keywords ?? publish.exclude_keywords,
+        }, routeDefaultEnabled("binance_square"));
+      }
+      return {
+        username,
+        enabled: item.enabled !== false,
+        platforms: normalizedPlatforms,
+      };
+    }
+
+    function normalizeTargets(rawTargets) {
+      const seen = new Set();
+      const targets = [];
+      for (const item of Array.isArray(rawTargets) ? rawTargets : []) {
+        if (!item || typeof item !== "object") continue;
+        const target = normalizeTarget(item);
+        if (!target.username) continue;
+        const key = target.username.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        targets.push(target);
+      }
+      return targets;
+    }
+
+    function setPage(page) {
+      currentPage = page === "settings" ? "settings" : "monitor";
+      document.title = currentPage === "settings" ? "设置" : "X 监控";
+      document.getElementById("monitorPage").classList.toggle("active", currentPage === "monitor");
+      document.getElementById("settingsPage").classList.toggle("active", currentPage === "settings");
+      document.getElementById("pageMonitorButton").setAttribute("aria-selected", currentPage === "monitor" ? "true" : "false");
+      document.getElementById("pageSettingsButton").setAttribute("aria-selected", currentPage === "settings" ? "true" : "false");
+      document.getElementById("monitorToolbar").classList.toggle("is-hidden", currentPage !== "monitor");
+    }
+
+    function updateRestartButtonState() {
+      const button = document.getElementById("restartRuntimeButton");
+      if (!button) return;
+      button.classList.toggle("needs-attention", restartAttention && currentRuntimeRunning);
+    }
+
+    function markRestartRequired() {
+      restartAttention = true;
+      updateRestartButtonState();
+    }
+
+    function renderStatus(data) {
+      currentRuntimeRunning = Boolean(data.running);
+      updateRestartButtonState();
+      const binance = deliverySummary.binance_square || {};
+      const latestBinance = binance.latest_status
+        ? `${binance.latest_status}${binance.latest_at ? ` / ${formatTime(binance.latest_at)}` : ""}`
+        : "暂无记录";
+      const items = [
+        { label: "运行", value: data.running ? "运行中" : "已停止", sub: data.running ? "轮询中" : "未启动", live: true },
+        { label: "采集", value: String(data.collected_count || 0), sub: "推文" },
+        { label: "电报", value: String(data.telegram_sent_count ?? data.sent_count ?? 0), sub: "已推送" },
+        { label: "币安广场", value: String(data.binance_sent_count ?? data.published_count ?? 0), sub: "已发布" },
+        { label: "失败", value: String(data.failed_count || 0), sub: data.last_error || data.last_delivery_error || "无错误" },
+        { label: "币安广场最近", value: latestBinance, sub: binance.latest_reason || "平台推送状态", wide: true },
+      ];
+      const statusBar = document.getElementById("statusBar");
+      statusBar.innerHTML = "";
+      for (const item of items) {
+        const el = document.createElement("div");
+        el.className = `status-item${item.wide ? " is-wide" : ""}`;
+        const label = document.createElement("div");
+        label.className = "status-label";
+        label.textContent = item.label;
+        const value = document.createElement("div");
+        value.className = "status-value";
+        if (item.live) {
+          const live = document.createElement("div");
+          live.className = "status-live";
+          const dot = document.createElement("span");
+          dot.className = `status-dot ${data.running ? "running" : ""}`.trim();
+          const text = document.createElement("span");
+          text.textContent = item.value;
+          live.append(dot, text);
+          value.appendChild(live);
+        } else {
+          value.textContent = item.value;
+        }
+        const sub = document.createElement("div");
+        sub.className = "status-sub";
+        sub.textContent = item.sub;
+        el.append(label, value, sub);
+        statusBar.appendChild(el);
+      }
+    }
+
+    function platformStatusLabel(platform, state) {
+      const status = state?.last_status || "idle";
+      if (platform === "telegram") {
+        return status === "success" ? "推送成功" : status === "failed" ? "推送失败" : "等待中";
+      }
+      return status === "success" ? "发布成功" : status === "failed" ? "发布失败" : status === "skipped" ? "已跳过" : "等待中";
+    }
+
+    function createToggle(checked, text, onChange) {
+      const label = document.createElement("label");
+      label.className = "toggle";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = checked;
+      input.addEventListener("change", () => onChange(input.checked));
+      const span = document.createElement("span");
+      span.textContent = text;
+      label.append(input, span);
+      return label;
+    }
+
+    function parseClauses(expression) {
+      return normalizeFilterExpression(expression).split(",").filter(Boolean);
+    }
+
+    function routeKeywordMode(route) {
+      if (route.keyword_mode === "exclude" || route.keyword_mode === "include") return route.keyword_mode;
+      if (parseClauses(route.exclude_keywords).length && !parseClauses(route.include_keywords).length) return "exclude";
+      return "include";
+    }
+
+    function setRouteKeywordMode(route, mode) {
+      route.keyword_mode = mode === "exclude" ? "exclude" : "include";
+      if (route.keyword_mode === "include") {
+        route.exclude_keywords = "";
+      } else {
+        route.include_keywords = "";
+      }
+    }
+
+    function ensureSingleKeywordMode(route) {
+      setRouteKeywordMode(route, routeKeywordMode(route));
+    }
+
+    function markTargetListEditing() {
+      targetListEditUntil = Date.now() + 15000;
+    }
+
+    function addFilterClause(route, kind, value) {
+      const clean = normalizeFilterExpression(value).split(",")[0] || "";
+      if (!clean) return { ok: false, message: "请输入关键词" };
+      setRouteKeywordMode(route, kind);
+      const key = kind === "include" ? "include_keywords" : "exclude_keywords";
+      const clauses = parseClauses(route[key]);
+      if (clauses.some((item) => item.toLowerCase() === clean.toLowerCase())) {
+        return { ok: false, message: "该关键词已存在" };
+      }
+      clauses.push(clean);
+      route[key] = clauses.join(",");
+      return { ok: true };
+    }
+
+    function renderRuleTags(route, rerender) {
+      const wrap = document.createElement("div");
+      wrap.className = "rule-tags";
+      const kind = routeKeywordMode(route);
+      const key = kind === "include" ? "include_keywords" : "exclude_keywords";
+      parseClauses(route[key]).forEach((clause, index) => {
+        const tag = document.createElement("span");
+        tag.className = `rule-tag${kind === "exclude" ? " exclude" : ""}`;
+        tag.textContent = `${kind === "include" ? "包含" : "排除"}：${clause.replace(/\+/g, " + ")}`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.addEventListener("click", () => {
+          const clauses = parseClauses(route[key]);
+          clauses.splice(index, 1);
+          route[key] = clauses.join(",");
+          setHint("关键词已更新，正在自动保存。", "warning");
+          rerender();
+          scheduleAutoSave();
+        });
+        tag.appendChild(remove);
+        wrap.appendChild(tag);
+      });
+      if (!wrap.children.length) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = kind === "include" ? "包含模式未设置关键词时，将匹配全部推文。" : "排除模式未设置关键词时，将不过滤任何推文。";
+        wrap.appendChild(empty);
+      }
+      return wrap;
+    }
+
+    function createKeywordComposer(route, rerender, draftKey) {
+      ensureSingleKeywordMode(route);
+      const box = document.createElement("div");
+      const composer = document.createElement("div");
+      composer.className = "keyword-composer";
+      const mode = routeKeywordMode(route);
+      const modeButton = document.createElement("button");
+      modeButton.type = "button";
+      modeButton.className = `button filter-mode-button${mode === "exclude" ? " is-exclude" : " is-primary"}`;
+      modeButton.textContent = mode === "exclude" ? "排除模式" : "包含模式";
+      modeButton.addEventListener("click", () => {
+        markTargetListEditing();
+        setRouteKeywordMode(route, mode === "include" ? "exclude" : "include");
+        setHint(`已切换为${routeKeywordMode(route) === "include" ? "包含" : "排除"}模式，正在自动保存。`, "warning");
+        rerender();
+        scheduleAutoSave();
+      });
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = mode === "include" ? "输入要命中的关键词，例如 btc 或 launchpool + binance" : "输入要排除的关键词，例如 spam 或 giveaway";
+      input.value = keywordDrafts[draftKey] || "";
+      input.addEventListener("focus", markTargetListEditing);
+      input.addEventListener("input", () => {
+        keywordDrafts[draftKey] = input.value;
+        markTargetListEditing();
+      });
+      const addButton = document.createElement("button");
+      addButton.type = "button";
+      addButton.className = "button is-primary";
+      addButton.textContent = "添加";
+      const add = () => {
+        const result = addFilterClause(route, routeKeywordMode(route), input.value);
+        if (!result.ok) {
+          setHint(result.message, "warning");
+          return;
+        }
+        delete keywordDrafts[draftKey];
+        setHint("关键词已更新，正在自动保存。", "warning");
+        rerender();
+        scheduleAutoSave();
+      };
+      addButton.addEventListener("click", add);
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          add();
+        }
+      });
+      composer.append(modeButton, input, addButton);
+      box.append(composer, renderRuleTags(route, rerender));
+      return box;
+    }
+
+    function renderPlatformCard(target, platform, title, runtime, rerender) {
+      const route = target.platforms[platform] || createPlatformRoute({ enabled: routeDefaultEnabled(platform) }, routeDefaultEnabled(platform));
+      target.platforms[platform] = route;
+      const state = runtime?.delivery?.[platform] || {};
+      const card = document.createElement("div");
+      card.className = `platform-card${route.enabled ? "" : " is-disabled"}`;
+      const head = document.createElement("div");
+      head.className = "platform-head";
+      const titleEl = document.createElement("h3");
+      titleEl.className = "platform-title";
+      titleEl.textContent = title;
+      const badge = document.createElement("div");
+      const status = state.last_status || "idle";
+      badge.className = `status-badge ${status}`;
+      badge.textContent = platformStatusLabel(platform, state);
+
+      const enableToggle = createToggle(route.enabled, route.enabled ? "已开启" : "已关闭", (checked) => {
+        route.enabled = checked;
+        setHint(`${title} 开关已更新，正在自动保存。`, "warning");
+        rerender();
+        scheduleAutoSave();
+      });
+      head.append(titleEl, enableToggle, badge);
+      const draftKey = `${target.username.toLowerCase()}:${platform}`;
+      card.append(head, createKeywordComposer(route, rerender, draftKey));
+      return card;
+    }
+
+    function renderTargetList() {
+      const list = document.getElementById("targetList");
+      const summary = document.getElementById("targetSummary");
+      const enabledCount = monitorTargets.filter((item) => item.enabled).length;
+      summary.textContent = `${monitorTargets.length} 个目标 / ${enabledCount} 个启用中`;
+      list.innerHTML = "";
+      if (!monitorTargets.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "还没有监控目标。新增一个用户名后，选择电报或币安广场平台。";
+        list.appendChild(empty);
+        return;
+      }
+
+      monitorTargets.forEach((target, index) => {
+        const runtime = targetRuntimeState[target.username.toLowerCase()] || {};
+        const row = document.createElement("div");
+        row.className = "target-row";
+        const main = document.createElement("div");
+        main.className = "target-main";
+        const meta = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "target-name";
+        title.textContent = `@${target.username}`;
+        const detail = document.createElement("div");
+        detail.className = "target-meta";
+        const fetchStatus = !target.enabled ? "paused" : (runtime.last_fetch_status || "idle");
+        const streakText = runtime.fetch_failure_streak ? ` / 连续 ${runtime.fetch_failure_streak} 次` : "";
+        detail.textContent = runtime.last_error
+          ? `${fetchStatus === "warning" ? "最近波动" : "最近错误"}：${runtime.last_error}${streakText}`
+          : `最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count || 0} 条`;
+        meta.append(title, detail);
+        const badge = document.createElement("div");
+        badge.className = `status-badge ${fetchStatus}`;
+        badge.textContent = fetchStatus === "success"
+          ? "抓取成功"
+          : fetchStatus === "warning"
+            ? "抓取波动"
+            : fetchStatus === "error"
+              ? "连续失败"
+              : fetchStatus === "paused"
+                ? "已暂停"
+                : "等待中";
+        const actions = document.createElement("div");
+        actions.className = "row-actions";
+        actions.append(
+          createToggle(target.enabled, target.enabled ? "启用" : "暂停", (checked) => {
+            target.enabled = checked;
+            setHint("目标开关已更新，正在自动保存。", "warning");
+            renderTargetList();
+            scheduleAutoSave();
+          })
+        );
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "button is-small is-danger";
+        remove.textContent = "移除";
+        remove.addEventListener("click", () => {
+          monitorTargets.splice(index, 1);
+          setHint("目标已移除，正在自动保存。", "warning");
+          renderTargetList();
+          scheduleAutoSave();
+        });
+        actions.appendChild(remove);
+        main.append(meta, badge, actions);
+        row.appendChild(main);
+        const platformGrid = document.createElement("div");
+        platformGrid.className = "platform-grid";
+        for (const definition of availablePlatforms) {
+          platformGrid.appendChild(renderPlatformCard(target, definition.platform, definition.label, runtime, renderTargetList));
+        }
+        row.appendChild(platformGrid);
+        list.appendChild(row);
+      });
+    }
+
+    function parseLogLine(line) {
+      const raw = String(line || "");
+      const matched = raw.match(/^(.*?) \| ([A-Z]+) \| (.*?) \| (.*)$/);
+      if (!matched) return { time: "", level: "INFO", source: "runtime", message: raw, raw };
+      return { time: matched[1], level: matched[2].toUpperCase(), source: matched[3], message: matched[4], raw };
+    }
+
+    function logSeverity(level) {
+      const normalized = String(level || "").toUpperCase();
+      if (normalized === "ERROR" || normalized === "CRITICAL") return "error";
+      if (normalized === "WARNING") return "warning";
+      return "info";
+    }
+
+    function logLevelLabel(level) {
+      const normalized = String(level || "").toUpperCase();
+      if (normalized === "CRITICAL") return "严重";
+      if (normalized === "ERROR") return "错误";
+      if (normalized === "WARNING") return "警告";
+      if (normalized === "DEBUG") return "调试";
+      return "信息";
+    }
+
+    function formatLogTime(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "--";
+      return raw.replace(/^\d{4}-/, "").replace(/,\d+$/, "");
+    }
+
+    function simplifyLogMessage(entry) {
+      const source = String(entry.source || "");
+      const message = String(entry.message || "");
+      const level = String(entry.level || "").toUpperCase();
+
+      if (source === "httpx" && message.includes("UserTweets")) {
+        return message.includes("200 OK")
+          ? "已请求 X 用户推文列表，X 返回成功。"
+          : "已请求 X 用户推文列表。";
+      }
+      if (source === "httpx" && message.includes("https://x.com") && message.includes("200 OK")) {
+        return "已连接 X，X 返回成功。";
+      }
+      if (source === "runtime" && message === "Runtime started.") return "监控已启动。";
+      if (source === "runtime" && message === "Runtime stopped.") return "监控已停止。";
+      if (source === "collector.twikit" && message.startsWith("Loaded twikit cookies")) {
+        return "已加载 X 登录 Cookies。";
+      }
+      if (source === "collector.twikit" && message.startsWith("X 标准抓取失败")) {
+        return "X 标准抓取失败，已自动切换备用模式重试。";
+      }
+      const temporaryFetchFailed = message.match(/^抓取 @([^ ]+) 暂时失败（第 (\d+) 次，下一轮会自动重试）：(.*)$/);
+      if (temporaryFetchFailed) {
+        return `@${temporaryFetchFailed[1]} 抓取波动，第 ${temporaryFetchFailed[2]} 次，下一轮自动重试：${temporaryFetchFailed[3].trim() || "未返回具体原因"}`;
+      }
+      const consecutiveFetchFailed = message.match(/^抓取 @([^ ]+) 连续失败 (\d+) 次：(.*)$/);
+      if (consecutiveFetchFailed) {
+        return `@${consecutiveFetchFailed[1]} 连续抓取失败 ${consecutiveFetchFailed[2]} 次：${consecutiveFetchFailed[3].trim() || "未返回具体原因"}`;
+      }
+      const fetchRecovered = message.match(/^抓取 @([^ ]+) 已恢复，本轮获取 (\d+) 条。$/);
+      if (fetchRecovered) return `@${fetchRecovered[1]} 抓取已恢复，本轮获取 ${fetchRecovered[2]} 条。`;
+      const fetchFailed = message.match(/^抓取 @([^ ]+) 失败：(.*)$/);
+      if (fetchFailed) {
+        return `抓取 @${fetchFailed[1]} 失败：${fetchFailed[2].trim() || "未返回具体原因"}`;
+      }
+      const targetFetchFailed = message.match(/^@([^ ]+) fetch failed: (.*)$/);
+      if (targetFetchFailed) {
+        return `@${targetFetchFailed[1]} 抓取失败：${targetFetchFailed[2].trim() || "未返回具体原因"}`;
+      }
+      const fetched = message.match(/^@([^ ]+) fetched (\d+)/);
+      if (fetched) return `@${fetched[1]} 已抓取 ${fetched[2]} 条推文。`;
+      const bootstrap = message.match(/^bootstrap ignored total (\d+)/);
+      if (bootstrap) return `首次启动已跳过历史推文 ${bootstrap[1]} 条。`;
+      const telegramSent = message.match(/^Sent (.*?) to Telegram\.$/);
+      if (telegramSent) return `电报已发送：${telegramSent[1]}。`;
+      const telegramFailed = message.match(/^Failed to send (.*?) after (\d+) attempts: (.*)$/);
+      if (telegramFailed) return `电报发送失败：${telegramFailed[1]}，已重试 ${telegramFailed[2]} 次。`;
+      const retrying = message.match(/^Send failed for (.*?) \(attempt (\d+)\/(\d+)\), retry in ([\d.]+)s: (.*)$/);
+      if (retrying) return `电报发送失败，准备第 ${retrying[2]}/${retrying[3]} 次重试。`;
+      if (level === "ERROR" && message.length > 180) return `${message.slice(0, 177)}...`;
+      return message;
+    }
+
+    function logMatchesFilter(entry) {
+      if (currentLogFilter === "all") return true;
+      return logSeverity(entry.level) === currentLogFilter;
+    }
+
+    function updateLogFilterState(shown, total) {
+      Array.from(document.querySelectorAll("[data-log-filter]")).forEach((button) => {
+        const selected = button.dataset.logFilter === currentLogFilter;
+        button.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+      const count = document.getElementById("logCount");
+      if (count) count.textContent = `${shown} / ${total}`;
+    }
+
+    function setLogFilter(filter) {
+      currentLogFilter = ["all", "error", "warning", "info"].includes(filter) ? filter : "all";
+      renderLogs(latestLogLines, { keepCache: true });
+    }
+
+    function renderLogs(lines, options = {}) {
+      const logs = document.getElementById("logs");
+      const autoScroll = document.getElementById("autoScroll");
+      const shouldStick = autoScroll ? autoScroll.checked : true;
+      const previousScrollTop = logs.scrollTop;
+      if (!options.keepCache) {
+        latestLogLines = Array.isArray(lines) ? lines : [];
+      }
+      logs.innerHTML = "";
+      const entries = latestLogLines.map(parseLogLine);
+      const visibleEntries = entries.filter(logMatchesFilter);
+      updateLogFilterState(visibleEntries.length, entries.length);
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "当前还没有日志输出。";
+        logs.appendChild(empty);
+      } else if (!visibleEntries.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "当前筛选没有匹配日志。";
+        logs.appendChild(empty);
+      } else {
+        const list = document.createElement("div");
+        list.className = "log-list";
+        for (const entry of visibleEntries) {
+          const severity = logSeverity(entry.level);
+          const row = document.createElement("div");
+          row.className = `log-entry is-${severity}`;
+          row.title = entry.raw || entry.message || "";
+          const level = document.createElement("div");
+          level.className = "log-entry-level";
+          level.textContent = logLevelLabel(entry.level);
+          const body = document.createElement("div");
+          body.className = "log-entry-body";
+          const meta = document.createElement("div");
+          meta.className = "log-entry-meta";
+          const time = document.createElement("span");
+          time.className = "log-entry-time";
+          time.textContent = formatLogTime(entry.time);
+          time.title = entry.time || "";
+          const source = document.createElement("span");
+          source.className = "log-entry-source";
+          source.textContent = entry.source || "runtime";
+          meta.append(time, source);
+          const message = document.createElement("div");
+          message.className = "log-entry-message";
+          message.textContent = simplifyLogMessage(entry);
+          body.append(meta, message);
+          row.append(level, body);
+          list.appendChild(row);
+        }
+        logs.appendChild(list);
+      }
+      logs.scrollTop = shouldStick ? logs.scrollHeight : previousScrollTop;
+    }
+
+    async function loadConfig() {
+      const config = await api("/api/config");
+      availablePlatforms = normalizePlatformDefinitions(config.available_platforms || fallbackPlatforms);
+      for (const key of fields) {
+        const element = document.getElementById(key);
+        if (!element) continue;
+        if (element.type === "checkbox") {
+          element.checked = Boolean(config[key]);
+        } else {
+          element.value = String(config[key] ?? "");
+        }
+      }
+      const defaults = {
+        twitter_poll_interval_sec: "300",
+        twitter_fetch_limit: "5",
+        twitter_bootstrap_drop_existing: true,
+        twikit_cookies_file: ".twikit_cookies.json",
+        binance_publish_template: "plain_with_link",
+        binance_retry_max_attempts: "3",
+        binance_retry_base_delay_sec: "2",
+        delivery_status_file: ".state/delivery_status.json",
+        delivery_status_max_records: "5000",
+        dedup_file: ".state/dedup.json",
+        dedup_max_ids: "5000",
+        retry_max_attempts: "4",
+        retry_base_delay_sec: "1.5",
+        log_level: "INFO",
+      };
+      for (const [key, value] of Object.entries(defaults)) {
+        const element = document.getElementById(key);
+        if (!element) continue;
+        if (element.type === "checkbox") {
+          if (config[key] === undefined) element.checked = Boolean(value);
+        } else if (!element.value) {
+          element.value = value;
+        }
+      }
+      monitorTargets = normalizeTargets(config.monitor_targets || []);
+      renderTargetList();
+    }
+
+    function buildPayload() {
+      const payload = {};
+      for (const key of fields) {
+        const element = document.getElementById(key);
+        if (!element) continue;
+        payload[key] = element.type === "checkbox" ? element.checked : element.value;
+      }
+      payload.monitor_targets = normalizeTargets(monitorTargets);
+      payload.twitter_provider = "twikit";
+      payload.twitter_poll_interval_sec = Number(payload.twitter_poll_interval_sec || 300);
+      payload.twitter_fetch_limit = Number(payload.twitter_fetch_limit || 5);
+      payload.twitter_bootstrap_drop_existing = Boolean(payload.twitter_bootstrap_drop_existing);
+      payload.binance_square_enabled = true;
+      payload.binance_publish_template = payload.binance_publish_template === "plain" ? "plain" : "plain_with_link";
+      payload.binance_retry_max_attempts = Number(payload.binance_retry_max_attempts || 3);
+      payload.binance_retry_base_delay_sec = Number(payload.binance_retry_base_delay_sec || 2);
+      payload.delivery_status_max_records = Number(payload.delivery_status_max_records || 5000);
+      payload.dedup_max_ids = Number(payload.dedup_max_ids || 5000);
+      payload.retry_max_attempts = Number(payload.retry_max_attempts || 4);
+      payload.retry_base_delay_sec = Number(payload.retry_base_delay_sec || 1.5);
+      return payload;
+    }
+
+    async function persistConfig({ source = "manual" } = {}) {
+      if (autosaveInFlight) {
+        autosaveQueued = true;
+        return;
+      }
+      autosaveInFlight = true;
+      try {
+        setConfigBusy(true);
+        if (source === "auto") {
+          setHint("正在自动保存规则...", "info");
+        } else {
+          setHint("正在保存配置...", "info");
+          setSaveStatus("正在写入配置...");
+        }
+        await api("/api/config", "POST", buildPayload());
+        const nowText = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        if (currentRuntimeRunning) {
+          markRestartRequired();
+          setHint(source === "auto" ? "规则已自动保存，重启后应用。" : "配置已保存，重启后应用新的目标和平台规则。", "success");
+        } else {
+          setHint(source === "auto" ? "规则已自动保存。" : "配置已保存，下次启动会加载新配置。", "success");
+        }
+        if (source !== "auto") {
+          setSaveStatus(`保存成功，时间 ${nowText}`);
+        }
+      } catch (err) {
+        setHint(err.message || "保存失败", "error");
+        if (source !== "auto") {
+          setSaveStatus(`保存失败：${err.message || "未知错误"}`);
+        }
+      } finally {
+        autosaveInFlight = false;
+        setConfigBusy(false);
+        if (autosaveQueued) {
+          autosaveQueued = false;
+          scheduleAutoSave();
+        }
+      }
+    }
+
+    function scheduleAutoSave() {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => {
+        void persistConfig({ source: "auto" });
+      }, 450);
+    }
+
+    async function saveConfig() {
+      await persistConfig({ source: "manual" });
+      await loadConfig();
+      await refreshAll();
+    }
+
+    async function startRuntime() {
+      const data = await api("/api/start", "POST");
+      restartAttention = false;
+      ingestStatus(data);
+      setHint("监控已启动。采集后会按目标内的平台开关推送。", "success");
+    }
+
+    async function stopRuntime() {
+      const data = await api("/api/stop", "POST");
+      restartAttention = false;
+      ingestStatus(data);
+      setHint("监控已停止。你现在可以安全修改目标和设置。", "warning");
+    }
+
+    async function restartRuntime() {
+      const data = await api("/api/restart", "POST");
+      restartAttention = false;
+      ingestStatus(data);
+      setHint("监控已重启。新的目标和平台规则已经重新加载。", "success");
+    }
+
+    async function testSend() {
+      const data = await api("/api/test-send", "POST");
+      const results = data.results || {};
+      const telegram = results.telegram || {};
+      const binance = results.binance_square || {};
+      const statusLabel = (item) => {
+        if (item.status === "success") return "成功";
+        if (item.status === "skipped") return "已跳过";
+        return "失败";
+      };
+      setHint(
+        `测试推送：电报 ${statusLabel(telegram)}，币安广场 ${statusLabel(binance)}。`,
+        data.ok ? "success" : "error",
+      );
+    }
+
+    async function clearLogs() {
+      await api("/api/logs/clear", "POST");
+      latestLogLines = [];
+      renderLogs([]);
+      setHint("日志缓存已清空。", "success");
+    }
+
+    function isEditingTargetList() {
+      const active = document.activeElement;
+      if (!active || !active.closest || !active.closest("#targetList")) return false;
+      return ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName);
+    }
+
+    function shouldDeferTargetListRender() {
+      return isEditingTargetList() || Date.now() < targetListEditUntil;
+    }
+
+    function ingestStatus(status) {
+      targetRuntimeState = {};
+      for (const item of Array.isArray(status.monitor_targets) ? status.monitor_targets : []) {
+        targetRuntimeState[String(item.username || "").toLowerCase()] = item;
+      }
+      deliverySummary = status.delivery || {};
+      renderStatus(status);
+      if (!shouldDeferTargetListRender()) {
+        renderTargetList();
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        const [status, logs] = await Promise.all([api("/api/status"), api("/api/logs")]);
+        ingestStatus(status);
+        renderLogs(logs.lines || []);
+      } catch (err) {
+        setHint(err.message || "刷新失败", "error");
+      }
+    }
+
+    function addTarget() {
+      const input = document.getElementById("new_target_username");
+      const username = input.value.trim().replace(/^@/, "");
+      if (!username) {
+        setHint("请输入有效的 X 用户名。", "warning");
+        return;
+      }
+      if (monitorTargets.some((item) => item.username.toLowerCase() === username.toLowerCase())) {
+        setHint("该目标已经存在，不需要重复添加。", "warning");
+        return;
+      }
+      monitorTargets.push(createTarget(username));
+      input.value = "";
+      renderTargetList();
+      setHint("目标已加入列表，正在自动保存。", "warning");
+      scheduleAutoSave();
+    }
+
+    function platformStatusLabel(platform, state) {
+      const status = state?.last_status || "idle";
+      if (status === "success") return "最近成功";
+      if (status === "failed" || status === "error") return "最近失败";
+      if (status === "skipped") return "最近跳过";
+      if (status === "paused") return "已暂停";
+      return "等待中";
+    }
+
+    function renderStatus(data) {
+      currentRuntimeRunning = Boolean(data.running);
+      updateRestartButtonState();
+      const publisherCounts = data.publisher_counts && typeof data.publisher_counts === "object" ? data.publisher_counts : {};
+      const items = [
+        { label: "运行", value: data.running ? "运行中" : "已停止", sub: data.running ? "轮询中" : "未启动", live: true },
+        { label: "采集", value: String(data.collected_count || 0), sub: "推文" },
+      ];
+
+      for (const definition of availablePlatforms) {
+        items.push({
+          label: definition.label,
+          value: String(publisherCounts[definition.platform] || 0),
+          sub: "已处理",
+        });
+      }
+
+      items.push({
+        label: "失败",
+        value: String(data.failed_count || 0),
+        sub: data.last_error || data.last_delivery_error || "无错误",
+      });
+
+      for (const definition of availablePlatforms) {
+        const summary = deliverySummary[definition.platform] || {};
+        if (!summary.latest_status) continue;
+        items.push({
+          label: `${definition.label} 最近`,
+          value: `${summary.latest_status}${summary.latest_at ? ` / ${formatTime(summary.latest_at)}` : ""}`,
+          sub: summary.latest_reason || "平台状态",
+          wide: true,
+        });
+      }
+
+      const statusBar = document.getElementById("statusBar");
+      statusBar.innerHTML = "";
+      for (const item of items) {
+        const el = document.createElement("div");
+        el.className = `status-item${item.wide ? " is-wide" : ""}`;
+        const label = document.createElement("div");
+        label.className = "status-label";
+        label.textContent = item.label;
+        const value = document.createElement("div");
+        value.className = "status-value";
+        if (item.live) {
+          const live = document.createElement("div");
+          live.className = "status-live";
+          const dot = document.createElement("span");
+          dot.className = `status-dot ${data.running ? "running" : ""}`.trim();
+          const text = document.createElement("span");
+          text.textContent = item.value;
+          live.append(dot, text);
+          value.appendChild(live);
+        } else {
+          value.textContent = item.value;
+        }
+        const sub = document.createElement("div");
+        sub.className = "status-sub";
+        sub.textContent = item.sub;
+        el.append(label, value, sub);
+        statusBar.appendChild(el);
+      }
+    }
+
+    async function testSend() {
+      const data = await api("/api/test-send", "POST");
+      const results = data.results || {};
+      const statusLabel = (item) => {
+        if (item.status === "success") return "成功";
+        if (item.status === "skipped") return "已跳过";
+        return "失败";
+      };
+      const summary = availablePlatforms
+        .map((definition) => `${definition.label} ${statusLabel(results[definition.platform] || {})}`)
+        .join("，");
+      setHint(`测试发送：${summary}。`, data.ok ? "success" : "error");
+    }
+
+    function initSecrets() {
+      Array.from(document.querySelectorAll("[data-toggle-secret]")).forEach((button) => {
+        button.addEventListener("click", () => {
+          const input = document.getElementById(button.dataset.toggleSecret);
+          if (!input) return;
+          input.type = input.type === "password" ? "text" : "password";
+          button.textContent = input.type === "password" ? "显示" : "隐藏";
+          button.setAttribute("aria-pressed", input.type === "text" ? "true" : "false");
+        });
+      });
+    }
+
+    function initTargetInput() {
+      const input = document.getElementById("new_target_username");
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addTarget();
+        }
+      });
+    }
+
+    async function boot() {
+      try {
+        initSecrets();
+        initTargetInput();
+        await loadConfig();
+        setPage("monitor");
+        await refreshAll();
+        refreshTimer = setInterval(() => {
+          if (!document.hidden) void refreshAll();
+        }, 3000);
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) void refreshAll();
+        });
+        setSaveStatus("配置已加载。修改后可直接保存。");
+      } catch (err) {
+        setHint(err.message || "初始化失败", "error");
+      }
+    }
+
+    function platformStatusLabel(platform, state) {
+      const status = state?.last_status || "idle";
+      if (status === "success" || status === "dry_run") return "最近成功";
+      if (status === "failed" || status === "error") return "最近失败";
+      if (status === "skipped") return "最近跳过";
+      if (status === "paused") return "已暂停";
+      return "等待中";
+    }
+
+    function renderStatus(data) {
+      currentRuntimeRunning = Boolean(data.running);
+      updateRestartButtonState();
+      const publisherCounts = data.publisher_counts && typeof data.publisher_counts === "object" ? data.publisher_counts : {};
+      const latestStatusText = (status) => {
+        if (status === "success") return "成功";
+        if (status === "dry_run") return "演练";
+        if (status === "failed" || status === "error") return "失败";
+        if (status === "skipped") return "跳过";
+        if (status === "paused") return "暂停";
+        return String(status || "暂无");
+      };
+      const items = [
+        { label: "运行", value: data.running ? "运行中" : "已停止", sub: data.running ? "轮询中" : "未启动", live: true },
+        { label: "采集", value: String(data.collected_count || 0), sub: "推文" },
+      ];
+
+      for (const definition of availablePlatforms) {
+        items.push({
+          label: definition.label,
+          value: String(publisherCounts[definition.platform] || 0),
+          sub: "已处理",
+        });
+      }
+
+      items.push({
+        label: "失败",
+        value: String(data.failed_count || 0),
+        sub: data.last_error || data.last_delivery_error || "无错误",
+      });
+
+      for (const definition of availablePlatforms) {
+        const summary = deliverySummary[definition.platform] || {};
+        if (!summary.latest_status) continue;
+        items.push({
+          label: `${definition.label} 最近`,
+          value: `${latestStatusText(summary.latest_status)}${summary.latest_at ? ` / ${formatTime(summary.latest_at)}` : ""}`,
+          sub: summary.latest_reason || "平台状态",
+          wide: true,
+        });
+      }
+
+      const statusBar = document.getElementById("statusBar");
+      statusBar.innerHTML = "";
+      for (const item of items) {
+        const el = document.createElement("div");
+        el.className = `status-item${item.wide ? " is-wide" : ""}`;
+        const label = document.createElement("div");
+        label.className = "status-label";
+        label.textContent = item.label;
+        const value = document.createElement("div");
+        value.className = "status-value";
+        if (item.live) {
+          const live = document.createElement("div");
+          live.className = "status-live";
+          const dot = document.createElement("span");
+          dot.className = `status-dot ${data.running ? "running" : ""}`.trim();
+          const text = document.createElement("span");
+          text.textContent = item.value;
+          live.append(dot, text);
+          value.appendChild(live);
+        } else {
+          value.textContent = item.value;
+        }
+        const sub = document.createElement("div");
+        sub.className = "status-sub";
+        sub.textContent = item.sub;
+        el.append(label, value, sub);
+        statusBar.appendChild(el);
+      }
+    }
+
+    async function testSend() {
+      const data = await api("/api/test-send", "POST");
+      const results = data.results || {};
+      const statusLabel = (item) => {
+        if (item.status === "success" || item.status === "dry_run") return "成功";
+        if (item.status === "skipped") return "已跳过";
+        return "失败";
+      };
+      const summary = availablePlatforms
+        .map((definition) => `${definition.label} ${statusLabel(results[definition.platform] || {})}`)
+        .join("，");
+      setHint(`测试发送：${summary}。`, data.ok ? "success" : "error");
+    }
+
     boot();
   </script>
 </body>

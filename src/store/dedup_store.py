@@ -15,7 +15,10 @@ class DedupStore:
         if not self._storage.exists():
             return
 
-        raw = json.loads(self._storage.read_text(encoding="utf-8"))
+        try:
+            raw = json.loads(self._storage.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
         ids = raw.get("tweet_ids", [])
         for tweet_id in ids[-self._max_ids :]:
             self._order.append(tweet_id)

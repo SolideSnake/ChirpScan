@@ -3,11 +3,38 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Protocol
+from typing import Any, Dict, List, Protocol
 
 from src.config.settings import Settings
 from src.models.event import TweetEvent
 from src.store.dedup_store import DedupStore
+
+
+def _is_twikit_transaction_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return (
+        isinstance(exc, AttributeError)
+        and "clienttransaction" in message
+        and "key" in message
+    ) or any(
+        marker in message
+        for marker in (
+            "couldn't get key_byte indices",
+            "couldn't get key from the page source",
+            "x-client-transaction-id",
+        )
+    )
+
+
+def _is_twikit_user_shape_error(exc: Exception) -> bool:
+    return isinstance(exc, KeyError) and str(exc).strip("'\"").lower() == "urls"
+
+
+class _NoopClientTransaction:
+    home_page_response = True
+
+    def generate_transaction_id(self, *args: object, **kwargs: object) -> str:
+        return ""
 
 
 @dataclass(slots=True)
@@ -16,15 +43,26 @@ class TargetFetchResult:
     ok: bool
     fetched_count: int
     error: str = ""
+    consecutive_failures: int = 0
+    escalated: bool = False
 
 
 def summarize_fetch_error(exc: Exception, cookies_file: str = "") -> str:
     raw = str(exc).strip()
     lowered = raw.lower()
+    exc_name = exc.__class__.__name__
+    exc_module = exc.__class__.__module__
+    exc_identity = f"{exc_module}.{exc_name}".lower()
 
     if isinstance(exc, FileNotFoundError):
         filename = getattr(exc, "filename", "") or cookies_file or "未指定"
         return f"Cookies 文件不存在：{filename}"
+
+    if "timeout" in exc_identity:
+        return "X 请求超时，可能是网络波动或 X 响应较慢，下一轮会自动重试。"
+
+    if "connecterror" in exc_identity or "networkerror" in exc_identity:
+        return "X 网络连接失败，请检查网络或代理后稍后重试。"
 
     if "twikit_username and twikit_password are required" in lowered:
         return "缺少 X 用户名或密码。"
@@ -41,7 +79,13 @@ def summarize_fetch_error(exc: Exception, cookies_file: str = "") -> str:
     if "status: 429" in lowered or "too many requests" in lowered:
         return "X 请求过于频繁，被限流了，请稍后再试。"
 
-    compact = raw.splitlines()[0].strip() if raw else "未知错误"
+    if _is_twikit_transaction_error(exc):
+        return "X 标准抓取暂时不可用，可能是 X 页面结构有更新。"
+
+    if _is_twikit_user_shape_error(exc):
+        return "X 用户资料字段缺失，当前抓取库解析失败。"
+
+    compact = raw.splitlines()[0].strip() if raw else exc_name
     if len(compact) > 160:
         compact = compact[:157] + "..."
     return compact
@@ -79,7 +123,8 @@ class TwikitTweetSource:
         self._log = logging.getLogger("collector.twikit")
         self._client = None
         self._ready = False
-        self._user_cache: Dict[str, object] = {}
+        self._transaction_fallback_enabled = False
+        self._user_cache: Dict[str, str] = {}
 
     async def _ensure_client(self) -> None:
         if self._ready:
@@ -128,46 +173,154 @@ class TwikitTweetSource:
 
         self._ready = True
 
-    async def _fetch_user_tweets(self, username: str, limit: int) -> List[TweetEvent]:
-        await self._ensure_client()
-        assert self._client is not None
+    def _reset_client(self) -> None:
+        self._client = None
+        self._ready = False
+        self._transaction_fallback_enabled = False
+        self._user_cache.clear()
 
-        user = self._user_cache.get(username)
-        if user is None:
-            user = await self._client.get_user_by_screen_name(username)
-            self._user_cache[username] = user
+    def _enable_transaction_fallback(self) -> bool:
+        if self._client is None:
+            return False
+        self._client.client_transaction = _NoopClientTransaction()
+        self._transaction_fallback_enabled = True
+        return True
 
-        tweets = await self._client.get_user_tweets(user.id, "Tweets", count=limit)
+    def _iter_tweet_results(self, obj: Any) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        if isinstance(obj, dict):
+            tweet_results = obj.get("tweet_results")
+            if isinstance(tweet_results, dict):
+                result = tweet_results.get("result")
+                if isinstance(result, dict):
+                    results.append(result)
+            for value in obj.values():
+                results.extend(self._iter_tweet_results(value))
+        elif isinstance(obj, list):
+            for item in obj:
+                results.extend(self._iter_tweet_results(item))
+        return results
+
+    def _timeline_response_to_events(
+        self,
+        response: Dict[str, Any],
+        *,
+        username: str,
+        user_id: str,
+        limit: int,
+    ) -> List[TweetEvent]:
         events: List[TweetEvent] = []
+        seen: set[str] = set()
 
-        for tweet in tweets:
-            tweet_id = str(getattr(tweet, "id", ""))
-            if not tweet_id:
+        for result in self._iter_tweet_results(response):
+            if result.get("__typename") == "TweetTombstone":
                 continue
-            text = str(getattr(tweet, "text", "")).strip()
-            created_at = str(getattr(tweet, "created_at", ""))
+            if isinstance(result.get("tweet"), dict):
+                result = result["tweet"]
+
+            legacy = result.get("legacy")
+            if not isinstance(legacy, dict):
+                continue
+            if str(legacy.get("user_id_str", "")).strip() != user_id:
+                continue
+
+            tweet_id = str(result.get("rest_id") or legacy.get("id_str") or "").strip()
+            if not tweet_id or tweet_id in seen:
+                continue
+            seen.add(tweet_id)
+
+            note_text = ""
+            note_result = (
+                result.get("note_tweet", {})
+                .get("note_tweet_results", {})
+                .get("result", {})
+            )
+            if isinstance(note_result, dict):
+                note_text = str(note_result.get("text") or "").strip()
+
+            text = note_text or str(legacy.get("full_text") or legacy.get("text") or "").strip()
             events.append(
                 TweetEvent(
                     tweet_id=tweet_id,
                     author=username,
                     text=text,
                     url=f"https://x.com/{username}/status/{tweet_id}",
-                    created_at=created_at,
+                    created_at=str(legacy.get("created_at") or ""),
                 )
             )
+            if len(events) >= limit:
+                break
+
         return events
 
+    async def _fetch_user_id(self, username: str) -> str:
+        await self._ensure_client()
+        assert self._client is not None
+
+        cache_key = username.lower()
+        cached = self._user_cache.get(cache_key)
+        if cached:
+            return cached
+
+        response, _ = await self._client.gql.user_by_screen_name(username)
+        user_data = response.get("data", {}).get("user", {}).get("result", {})
+        if user_data.get("__typename") == "UserUnavailable":
+            raise RuntimeError(user_data.get("message") or f"X 用户 @{username} 不可用。")
+
+        user_id = str(user_data.get("rest_id", "")).strip()
+        if not user_id:
+            raise RuntimeError(f"未找到 X 用户 @{username}。")
+
+        self._user_cache[cache_key] = user_id
+        return user_id
+
+    async def _fetch_user_tweets(self, username: str, limit: int) -> List[TweetEvent]:
+        await self._ensure_client()
+        assert self._client is not None
+
+        user_id = await self._fetch_user_id(username)
+        response, _ = await self._client.gql.user_tweets(user_id, max(1, limit), None)
+        return self._timeline_response_to_events(
+            response,
+            username=username,
+            user_id=user_id,
+            limit=limit,
+        )
+
     async def fetch_latest(self, username: str, limit: int) -> List[TweetEvent]:
-        return await self._fetch_user_tweets(username, limit)
+        try:
+            return await self._fetch_user_tweets(username, limit)
+        except Exception as exc:
+            if not _is_twikit_transaction_error(exc):
+                raise
+
+            self._log.warning(
+                "X 标准抓取失败，已自动切换备用模式重试一次：%s",
+                summarize_fetch_error(exc, self._settings.twikit_cookies_file),
+            )
+            self._reset_client()
+            await self._ensure_client()
+            if not self._enable_transaction_fallback():
+                self._reset_client()
+                raise
+
+            try:
+                return await self._fetch_user_tweets(username, limit)
+            except Exception:
+                self._reset_client()
+                raise
 
 
 class TwitterCollector:
+    _failure_error_threshold = 3
+
     def __init__(self, source: TweetSource, settings: Settings, dedup_store: DedupStore) -> None:
         self._source = source
         self._settings = settings
         self._dedup = dedup_store
         self._log = logging.getLogger("collector")
         self._bootstrapped = False
+        self._failure_streaks: Dict[str, int] = {}
 
     async def collect(self) -> tuple[List[TweetEvent], List[TargetFetchResult]]:
         events: List[TweetEvent] = []
@@ -178,6 +331,9 @@ class TwitterCollector:
                     username=username,
                     limit=self._settings.twitter_fetch_limit,
                 )
+                previous_failures = self._failure_streaks.pop(username, 0)
+                if previous_failures:
+                    self._log.info("抓取 @%s 已恢复，本轮获取 %d 条。", username, len(fetched))
                 events.extend(fetched)
                 target_results.append(
                     TargetFetchResult(
@@ -191,13 +347,31 @@ class TwitterCollector:
                     exc,
                     getattr(self._settings, "twikit_cookies_file", ""),
                 )
-                self._log.error("抓取 @%s 失败：%s", username, summarized)
+                consecutive_failures = self._failure_streaks.get(username, 0) + 1
+                self._failure_streaks[username] = consecutive_failures
+                escalated = consecutive_failures >= self._failure_error_threshold
+                if escalated:
+                    self._log.error(
+                        "抓取 @%s 连续失败 %d 次：%s",
+                        username,
+                        consecutive_failures,
+                        summarized,
+                    )
+                else:
+                    self._log.warning(
+                        "抓取 @%s 暂时失败（第 %d 次，下一轮会自动重试）：%s",
+                        username,
+                        consecutive_failures,
+                        summarized,
+                    )
                 target_results.append(
                     TargetFetchResult(
                         username=username,
                         ok=False,
                         fetched_count=0,
                         error=summarized,
+                        consecutive_failures=consecutive_failures,
+                        escalated=escalated,
                     )
                 )
 

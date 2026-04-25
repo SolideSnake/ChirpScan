@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from src.runtime.manager import RuntimeManager, configure_logging
 
-app = FastAPI(title="Tweet Monitor UI", version="0.1.0")
+app = FastAPI(title="ChirpScan", version="2.0.0")
 manager = RuntimeManager()
 configure_logging("INFO")
 manager.load_saved_config()
@@ -84,5 +84,4 @@ async def restart_runtime() -> Dict[str, Any]:
 
 @app.post("/api/test-send")
 async def test_send() -> Dict[str, Any]:
-    ok = await manager.test_send()
-    return {"ok": ok}
+    return await manager.test_send()
