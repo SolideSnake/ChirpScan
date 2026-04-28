@@ -218,7 +218,10 @@
     .platform-card.is-disabled { opacity: 0.56; }
     .platform-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin-bottom: 8px; }
     .platform-title { margin: 0; font-size: 13px; line-height: 1.2; }
+    .keyword-board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: stretch; }
+    .keyword-input-panel, .keyword-active-panel { min-width: 0; padding: 8px; border-radius: 12px; border: 1px solid rgba(118, 184, 255, 0.12); background: rgba(4, 10, 20, 0.32); }
     .keyword-composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+    .keyword-panel-title { margin: 0 0 7px; color: #d7e3f7; font-size: 12px; font-weight: 700; }
     .filter-mode-button { min-width: 78px; }
     .filter-mode-button.is-exclude { color: #ffd7de; border-color: rgba(255, 111, 136, 0.36); background: rgba(255, 111, 136, 0.1); }
     .rule-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
@@ -260,7 +263,7 @@
     }
     @media (max-width: 760px) {
       .shell { width: min(100% - 20px, 100%); }
-      .grid, .target-main, .add-target, .platform-grid, .keyword-composer { grid-template-columns: 1fr; }
+      .grid, .target-main, .add-target, .platform-grid, .keyword-board, .keyword-composer { grid-template-columns: 1fr; }
       .log-entry { grid-template-columns: 1fr; gap: 6px; }
       .save-row, .section-head, .platform-head { flex-direction: column; align-items: flex-start; }
       .status-item { flex-basis: 100%; }
@@ -351,9 +354,16 @@
         </div>
 
         <div class="card stack-card">
-          <div class="section-head"><div><h2>币安广场设置</h2><p>币安广场当前使用公开纯文本发文接口。</p></div></div>
+          <div class="section-head"><div><h2>飞书设置</h2><p>飞书通过自定义机器人 Webhook 推送，目标内可单独开启和配置关键词。</p></div></div>
           <div class="grid">
-            <div class="field"><label for="binance_publish_template">币安广场发布模板</label><select id="binance_publish_template"><option value="plain_with_link">正文 + 原推链接</option><option value="plain">仅正文</option></select></div>
+            <div class="field" style="grid-column:1 / -1;"><label for="feishu_webhook_url">飞书 Webhook URL</label><div class="secret-input"><input id="feishu_webhook_url" type="password" autocomplete="off" placeholder="https://open.feishu.cn/open-apis/bot/v2/..."><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="feishu_webhook_url">显示</button></div></div>
+            <div class="field" style="grid-column:1 / -1;"><label for="feishu_secret">飞书签名密钥（可选）</label><div class="secret-input"><input id="feishu_secret" type="password" autocomplete="off" placeholder="机器人开启签名校验时填写"><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="feishu_secret">显示</button></div></div>
+          </div>
+        </div>
+
+        <div class="card stack-card">
+          <div class="section-head"><div><h2>币安广场设置</h2><p>币安广场只发布清理后的纯正文，不发送原推链接或图片链接。</p></div></div>
+          <div class="grid">
             <div class="field" style="grid-column:1 / -1;"><label for="binance_square_api_key">币安广场 API Key</label><div class="secret-input"><input id="binance_square_api_key" type="password" autocomplete="off" placeholder="输入币安广场 API Key"><button class="secret-toggle" type="button" aria-pressed="false" data-toggle-secret="binance_square_api_key">显示</button></div></div>
             <div class="field"><label for="binance_retry_max_attempts">币安广场重试次数</label><input id="binance_retry_max_attempts" type="number" min="1" inputmode="numeric"></div>
             <div class="field"><label for="binance_retry_base_delay_sec">币安广场重试延迟（秒）</label><input id="binance_retry_base_delay_sec" type="number" min="0.1" step="0.1" inputmode="decimal"></div>
@@ -367,8 +377,8 @@
             <div class="field"><label for="dedup_max_ids">去重保留数</label><input id="dedup_max_ids" type="number" min="1" inputmode="numeric"></div>
             <div class="field"><label for="delivery_status_file">平台推送状态文件</label><input id="delivery_status_file"></div>
             <div class="field"><label for="delivery_status_max_records">平台状态保留数</label><input id="delivery_status_max_records" type="number" min="1" inputmode="numeric"></div>
-            <div class="field"><label for="retry_max_attempts">电报重试次数</label><input id="retry_max_attempts" type="number" min="1" inputmode="numeric"></div>
-            <div class="field"><label for="retry_base_delay_sec">电报重试延迟（秒）</label><input id="retry_base_delay_sec" type="number" min="0.1" step="0.1" inputmode="decimal"></div>
+            <div class="field"><label for="retry_max_attempts">通知重试次数</label><input id="retry_max_attempts" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="retry_base_delay_sec">通知重试延迟（秒）</label><input id="retry_base_delay_sec" type="number" min="0.1" step="0.1" inputmode="decimal"></div>
             <div class="field"><label for="log_level">日志级别</label><select id="log_level"><option value="DEBUG">DEBUG</option><option value="INFO">INFO</option><option value="WARNING">WARNING</option><option value="ERROR">ERROR</option></select></div>
           </div>
         </div>
@@ -391,8 +401,9 @@
       "twikit_cookies_file",
       "telegram_bot_token",
       "telegram_chat_id",
+      "feishu_webhook_url",
+      "feishu_secret",
       "binance_square_api_key",
-      "binance_publish_template",
       "binance_retry_max_attempts",
       "binance_retry_base_delay_sec",
       "delivery_status_file",
@@ -419,6 +430,7 @@
     let autosaveQueued = false;
     const fallbackPlatforms = [
       { platform: "telegram", label: "电报", default_enabled: true, persists_delivery: false },
+      { platform: "feishu", label: "飞书", default_enabled: false, persists_delivery: false },
       { platform: "binance_square", label: "币安广场", default_enabled: false, persists_delivery: true },
     ];
     let availablePlatforms = fallbackPlatforms.map((item) => ({ ...item }));
@@ -489,6 +501,7 @@
 
     function platformDisplayName(platform, fallback = "") {
       if (platform === "telegram") return "电报";
+      if (platform === "feishu") return "飞书";
       if (platform === "binance_square") return "币安广场";
       return String(fallback || platform);
     }
@@ -506,6 +519,50 @@
       };
     }
 
+    function firstKeywordValue(...values) {
+      for (const value of values) {
+        const normalized = normalizeFilterExpression(value);
+        if (normalized) return normalized;
+      }
+      return "";
+    }
+
+    function sharedKeywordsFromPlatforms(platforms, key) {
+      const preferred = ["telegram", "feishu", "binance_square"];
+      for (const platform of preferred) {
+        if (platforms[platform]?.[key]) return platforms[platform][key];
+      }
+      for (const route of Object.values(platforms)) {
+        if (route?.[key]) return route[key];
+      }
+      return "";
+    }
+
+    function platformEnabledCount(target) {
+      return Object.values(target.platforms || {}).filter((route) => route?.enabled).length;
+    }
+
+    function serializeTargetForConfig(target) {
+      const include = normalizeFilterExpression(target.include_keywords);
+      const exclude = normalizeFilterExpression(target.exclude_keywords);
+      const platforms = {};
+      for (const definition of availablePlatforms) {
+        const route = target.platforms?.[definition.platform] || createPlatformRoute({}, definition.default_enabled);
+        platforms[definition.platform] = {
+          enabled: route.enabled !== false,
+          include_keywords: include,
+          exclude_keywords: exclude,
+        };
+      }
+      return {
+        username: target.username,
+        enabled: true,
+        include_keywords: include,
+        exclude_keywords: exclude,
+        platforms,
+      };
+    }
+
     function createTarget(username) {
       const platforms = {};
       for (const item of availablePlatforms) {
@@ -514,6 +571,8 @@
       return {
         username,
         enabled: true,
+        include_keywords: "",
+        exclude_keywords: "",
         platforms,
       };
     }
@@ -546,9 +605,25 @@
           exclude_keywords: legacyBinance.exclude_keywords ?? publish.exclude_keywords,
         }, routeDefaultEnabled("binance_square"));
       }
+      const includeKeywords = firstKeywordValue(
+        item.include_keywords,
+        alert.include_keywords,
+        publish.include_keywords,
+        legacyBinance.include_keywords,
+        sharedKeywordsFromPlatforms(normalizedPlatforms, "include_keywords"),
+      );
+      const excludeKeywords = firstKeywordValue(
+        item.exclude_keywords,
+        alert.exclude_keywords,
+        publish.exclude_keywords,
+        legacyBinance.exclude_keywords,
+        sharedKeywordsFromPlatforms(normalizedPlatforms, "exclude_keywords"),
+      );
       return {
         username,
         enabled: item.enabled !== false,
+        include_keywords: includeKeywords,
+        exclude_keywords: excludeKeywords,
         platforms: normalizedPlatforms,
       };
     }
@@ -731,6 +806,17 @@
     function createKeywordComposer(route, rerender, draftKey) {
       ensureSingleKeywordMode(route);
       const box = document.createElement("div");
+      box.className = "keyword-board";
+      const inputPanel = document.createElement("div");
+      inputPanel.className = "keyword-input-panel";
+      const activePanel = document.createElement("div");
+      activePanel.className = "keyword-active-panel";
+      const inputTitle = document.createElement("h3");
+      inputTitle.className = "keyword-panel-title";
+      inputTitle.textContent = "添加规则";
+      const activeTitle = document.createElement("h3");
+      activeTitle.className = "keyword-panel-title";
+      activeTitle.textContent = "生效规则";
       const composer = document.createElement("div");
       composer.className = "keyword-composer";
       const mode = routeKeywordMode(route);
@@ -777,36 +863,22 @@
         }
       });
       composer.append(modeButton, input, addButton);
-      box.append(composer, renderRuleTags(route, rerender));
+      inputPanel.append(inputTitle, composer);
+      activePanel.append(activeTitle, renderRuleTags(route, rerender));
+      box.append(inputPanel, activePanel);
       return box;
     }
 
-    function renderPlatformCard(target, platform, title, runtime, rerender) {
-      const route = target.platforms[platform] || createPlatformRoute({ enabled: routeDefaultEnabled(platform) }, routeDefaultEnabled(platform));
-      target.platforms[platform] = route;
-      const state = runtime?.delivery?.[platform] || {};
-      const card = document.createElement("div");
-      card.className = `platform-card${route.enabled ? "" : " is-disabled"}`;
-      const head = document.createElement("div");
-      head.className = "platform-head";
-      const titleEl = document.createElement("h3");
-      titleEl.className = "platform-title";
-      titleEl.textContent = title;
-      const badge = document.createElement("div");
-      const status = state.last_status || "idle";
-      badge.className = `status-badge ${status}`;
-      badge.textContent = platformStatusLabel(platform, state);
-
-      const enableToggle = createToggle(route.enabled, route.enabled ? "已开启" : "已关闭", (checked) => {
+    function createPlatformSwitch(target, definition, rerender) {
+      const route = target.platforms[definition.platform] || createPlatformRoute({ enabled: definition.default_enabled }, definition.default_enabled);
+      target.platforms[definition.platform] = route;
+      return createToggle(route.enabled, definition.label, (checked) => {
         route.enabled = checked;
-        setHint(`${title} 开关已更新，正在自动保存。`, "warning");
+        target.enabled = true;
+        setHint(`${definition.label} 分发已${checked ? "开启" : "关闭"}，正在自动保存。`, "warning");
         rerender();
         scheduleAutoSave();
       });
-      head.append(titleEl, enableToggle, badge);
-      const draftKey = `${target.username.toLowerCase()}:${platform}`;
-      card.append(head, createKeywordComposer(route, rerender, draftKey));
-      return card;
     }
 
     function renderTargetList() {
@@ -837,9 +909,10 @@
         detail.className = "target-meta";
         const fetchStatus = !target.enabled ? "paused" : (runtime.last_fetch_status || "idle");
         const streakText = runtime.fetch_failure_streak ? ` / 连续 ${runtime.fetch_failure_streak} 次` : "";
+        const channelText = `${platformEnabledCount(target)} 个渠道已开启`;
         detail.textContent = runtime.last_error
           ? `${fetchStatus === "warning" ? "最近波动" : "最近错误"}：${runtime.last_error}${streakText}`
-          : `最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count || 0} 条`;
+          : `最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count || 0} 条 / ${channelText}`;
         meta.append(title, detail);
         const badge = document.createElement("div");
         badge.className = `status-badge ${fetchStatus}`;
@@ -854,14 +927,9 @@
                 : "等待中";
         const actions = document.createElement("div");
         actions.className = "row-actions";
-        actions.append(
-          createToggle(target.enabled, target.enabled ? "启用" : "暂停", (checked) => {
-            target.enabled = checked;
-            setHint("目标开关已更新，正在自动保存。", "warning");
-            renderTargetList();
-            scheduleAutoSave();
-          })
-        );
+        for (const definition of availablePlatforms) {
+          actions.appendChild(createPlatformSwitch(target, definition, renderTargetList));
+        }
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "button is-small is-danger";
@@ -875,12 +943,7 @@
         actions.appendChild(remove);
         main.append(meta, badge, actions);
         row.appendChild(main);
-        const platformGrid = document.createElement("div");
-        platformGrid.className = "platform-grid";
-        for (const definition of availablePlatforms) {
-          platformGrid.appendChild(renderPlatformCard(target, definition.platform, definition.label, runtime, renderTargetList));
-        }
-        row.appendChild(platformGrid);
+        row.appendChild(createKeywordComposer(target, renderTargetList, `${target.username.toLowerCase()}:shared`));
         list.appendChild(row);
       });
     }
@@ -1060,7 +1123,6 @@
         twitter_fetch_limit: "5",
         twitter_bootstrap_drop_existing: true,
         twikit_cookies_file: ".twikit_cookies.json",
-        binance_publish_template: "plain_with_link",
         binance_retry_max_attempts: "3",
         binance_retry_base_delay_sec: "2",
         delivery_status_file: ".state/delivery_status.json",
@@ -1091,13 +1153,12 @@
         if (!element) continue;
         payload[key] = element.type === "checkbox" ? element.checked : element.value;
       }
-      payload.monitor_targets = normalizeTargets(monitorTargets);
+      payload.monitor_targets = normalizeTargets(monitorTargets).map(serializeTargetForConfig);
       payload.twitter_provider = "twikit";
       payload.twitter_poll_interval_sec = Number(payload.twitter_poll_interval_sec || 300);
       payload.twitter_fetch_limit = Number(payload.twitter_fetch_limit || 5);
       payload.twitter_bootstrap_drop_existing = Boolean(payload.twitter_bootstrap_drop_existing);
       payload.binance_square_enabled = true;
-      payload.binance_publish_template = payload.binance_publish_template === "plain" ? "plain" : "plain_with_link";
       payload.binance_retry_max_attempts = Number(payload.binance_retry_max_attempts || 3);
       payload.binance_retry_base_delay_sec = Number(payload.binance_retry_base_delay_sec || 2);
       payload.delivery_status_max_records = Number(payload.delivery_status_max_records || 5000);

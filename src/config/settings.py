@@ -300,6 +300,9 @@ class Settings:
     telegram_bot_token: str
     telegram_chat_id: str
 
+    feishu_webhook_url: str
+    feishu_secret: str
+
     binance_square_enabled: bool
     binance_square_api_key: str
     binance_publish_template: str
@@ -349,6 +352,8 @@ def load_settings() -> Settings:
         twikit_cookies_file=os.getenv("TWIKIT_COOKIES_FILE", ".twikit_cookies.json").strip(),
         telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
         telegram_chat_id=os.getenv("TELEGRAM_CHAT_ID", "").strip(),
+        feishu_webhook_url=os.getenv("FEISHU_WEBHOOK_URL", "").strip(),
+        feishu_secret=os.getenv("FEISHU_SECRET", "").strip(),
         binance_square_enabled=_as_bool("BINANCE_SQUARE_ENABLED", True),
         binance_square_api_key=os.getenv("BINANCE_SQUARE_API_KEY", "").strip(),
         binance_publish_template=_normalize_binance_template(os.getenv("BINANCE_PUBLISH_TEMPLATE", "plain_with_link")),

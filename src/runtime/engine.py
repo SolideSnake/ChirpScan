@@ -10,6 +10,7 @@ from src.honor_board.service import HonorBoardService
 from src.models.event import TweetEvent
 from src.notifier.base import EventPublisher
 from src.notifier.binance_square_notifier import BinanceSquareNotifier
+from src.notifier.feishu_notifier import FeishuNotifier
 from src.notifier.telegram_notifier import TelegramNotifier
 from src.queue.in_memory_queue import InMemoryMessageQueue
 from src.store.dedup_store import DedupStore
@@ -42,6 +43,7 @@ class RuntimeContext:
 def build_publishers(settings: Settings, delivery_store: DeliveryStatusStore) -> List[EventPublisher]:
     return [
         TelegramNotifier(settings=settings),
+        FeishuNotifier(settings=settings),
         BinanceSquareNotifier(settings=settings, delivery_store=delivery_store),
     ]
 

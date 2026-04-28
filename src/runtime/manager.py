@@ -132,6 +132,8 @@ class RuntimeManager:
             "twikit_cookies_file": "TWIKIT_COOKIES_FILE",
             "telegram_bot_token": "TELEGRAM_BOT_TOKEN",
             "telegram_chat_id": "TELEGRAM_CHAT_ID",
+            "feishu_webhook_url": "FEISHU_WEBHOOK_URL",
+            "feishu_secret": "FEISHU_SECRET",
             "binance_square_enabled": "BINANCE_SQUARE_ENABLED",
             "binance_square_api_key": "BINANCE_SQUARE_API_KEY",
             "binance_publish_template": "BINANCE_PUBLISH_TEMPLATE",

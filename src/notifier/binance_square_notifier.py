@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from typing import Any, Dict
 from urllib import request
 
@@ -13,13 +14,23 @@ from src.store.delivery_status_store import DeliveryRecord, DeliveryStatusStore
 
 
 BINANCE_SQUARE_ENDPOINT = "https://www.binance.com/bapi/composite/v1/public/pgc/openApi/content/add"
+_URL_RE = re.compile(r"(?:https?://|www\.|t\.co/)\S+", re.IGNORECASE)
+_MANY_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 
 def _truncate_text(text: str, limit: int = 200) -> str:
-    cleaned = " ".join((text or "").split())
+    cleaned = (text or "").strip()
     if len(cleaned) <= limit:
         return cleaned
     return cleaned[: max(0, limit - 3)].rstrip() + "..."
+
+
+def clean_binance_body_text(text: str) -> str:
+    normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    without_urls = _URL_RE.sub("", normalized)
+    lines = [line.rstrip() for line in without_urls.split("\n")]
+    cleaned = "\n".join(lines).strip()
+    return _MANY_BLANK_LINES_RE.sub("\n\n", cleaned)
 
 
 class BinanceSquareNotifier:
@@ -51,10 +62,7 @@ class BinanceSquareNotifier:
         self._log = logging.getLogger("notifier.binance_square")
 
     def _build_body_text(self, event: TweetEvent) -> str:
-        text = (event.text or "").strip()
-        if self._settings.binance_publish_template == "plain_with_link" and event.url:
-            text = f"{text}\n{event.url}" if text else event.url
-        return _truncate_text(text)
+        return _truncate_text(clean_binance_body_text(event.text or ""))
 
     def _is_key_configured(self) -> bool:
         key = (self._settings.binance_square_api_key or "").strip()
@@ -117,6 +125,15 @@ class BinanceSquareNotifier:
             )
 
         body_text = self._build_body_text(event)
+        if not body_text:
+            record = DeliveryRecord.create(
+                platform=self.platform,
+                tweet_id=event.tweet_id,
+                status="skipped",
+                reason="empty body after url cleanup",
+                retryable=False,
+            )
+            return self._delivery_store.save_record(record)
 
         attempts = max(1, int(self._settings.binance_retry_max_attempts))
         base_delay = max(0.1, float(self._settings.binance_retry_base_delay_sec))

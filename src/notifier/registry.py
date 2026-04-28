@@ -20,6 +20,12 @@ PUBLISHER_DEFINITIONS = (
         persists_delivery=False,
     ),
     PublisherDefinition(
+        platform="feishu",
+        label="飞书",
+        default_enabled=False,
+        persists_delivery=False,
+    ),
+    PublisherDefinition(
         platform="binance_square",
         label="Binance Square",
         default_enabled=False,
@@ -34,4 +40,3 @@ PUBLISHER_DEFINITIONS_BY_ID = {
 
 def serialize_publisher_definitions() -> List[Dict[str, Any]]:
     return [asdict(definition) for definition in PUBLISHER_DEFINITIONS]
-
