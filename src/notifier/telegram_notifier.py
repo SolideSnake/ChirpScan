@@ -52,11 +52,21 @@ class TelegramNotifier:
 
         return parsed.astimezone(self._display_timezone()).strftime("%Y-%m-%d %H:%M:%S")
 
+    def _format_reply_target(self, event: TweetEvent) -> str:
+        if event.in_reply_to_user:
+            return f"@{event.in_reply_to_user}"
+        return "某人"
+
     def _format_message(self, event: TweetEvent) -> str:
         safe_text = event.text.strip() if event.text else "(无正文)"
         created_at = self._format_created_at(event.created_at)
+        action = (
+            f"回复了 {self._format_reply_target(event)}"
+            if event.tweet_type == "reply"
+            else "发推了"
+        )
         return (
-            f"老大，@{event.author} 发推了\n\n"
+            f"老大，@{event.author} {action}\n\n"
             f"{safe_text}\n\n"
             f"链接：{event.url}\n"
             f"时间：{created_at}"

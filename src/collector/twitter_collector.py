@@ -30,6 +30,11 @@ def _is_twikit_user_shape_error(exc: Exception) -> bool:
     return isinstance(exc, KeyError) and str(exc).strip("'\"").lower() == "urls"
 
 
+def _is_twikit_not_found_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return exc.__class__.__name__.lower() == "notfound" or "status: 404" in message
+
+
 class _NoopClientTransaction:
     home_page_response = True
 
@@ -82,6 +87,9 @@ def summarize_fetch_error(exc: Exception, cookies_file: str = "") -> str:
     if _is_twikit_transaction_error(exc):
         return "X 标准抓取暂时不可用，可能是 X 页面结构有更新。"
 
+    if _is_twikit_not_found_error(exc):
+        return "X 抓取接口返回 404，可能是 X 前端接口 ID 已更新。"
+
     if _is_twikit_user_shape_error(exc):
         return "X 用户资料字段缺失，当前抓取库解析失败。"
 
@@ -92,7 +100,7 @@ def summarize_fetch_error(exc: Exception, cookies_file: str = "") -> str:
 
 
 class TweetSource(Protocol):
-    async def fetch_latest(self, username: str, limit: int) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
         raise NotImplementedError
 
 
@@ -100,7 +108,7 @@ class MockTweetSource:
     def __init__(self) -> None:
         self._counter = 0
 
-    async def fetch_latest(self, username: str, limit: int) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
         self._counter += 1
         now = datetime.now(timezone.utc).isoformat()
         tweet_id = f"mock-{username}-{self._counter}"
@@ -239,6 +247,10 @@ class TwikitTweetSource:
                 note_text = str(note_result.get("text") or "").strip()
 
             text = note_text or str(legacy.get("full_text") or legacy.get("text") or "").strip()
+            in_reply_to_status_id = str(legacy.get("in_reply_to_status_id_str") or "").strip()
+            in_reply_to_user = str(legacy.get("in_reply_to_screen_name") or "").strip().lstrip("@")
+            conversation_id = str(legacy.get("conversation_id_str") or legacy.get("conversation_id") or "").strip()
+            tweet_type = "reply" if in_reply_to_status_id or (conversation_id and conversation_id != tweet_id) else "post"
             events.append(
                 TweetEvent(
                     tweet_id=tweet_id,
@@ -246,6 +258,10 @@ class TwikitTweetSource:
                     text=text,
                     url=f"https://x.com/{username}/status/{tweet_id}",
                     created_at=str(legacy.get("created_at") or ""),
+                    tweet_type=tweet_type,
+                    in_reply_to_status_id=in_reply_to_status_id,
+                    in_reply_to_user=in_reply_to_user,
+                    conversation_id=conversation_id,
                 )
             )
             if len(events) >= limit:
@@ -274,12 +290,23 @@ class TwikitTweetSource:
         self._user_cache[cache_key] = user_id
         return user_id
 
-    async def _fetch_user_tweets(self, username: str, limit: int) -> List[TweetEvent]:
+    async def _fetch_user_tweets(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
         await self._ensure_client()
         assert self._client is not None
 
         user_id = await self._fetch_user_id(username)
-        response, _ = await self._client.gql.user_tweets(user_id, max(1, limit), None)
+        fetcher = self._client.gql.user_tweets_and_replies if include_replies else self._client.gql.user_tweets
+        try:
+            response, _ = await fetcher(user_id, max(1, limit), None)
+        except Exception as exc:
+            if not include_replies or not _is_twikit_not_found_error(exc):
+                raise
+            self._log.warning(
+                "@%s 回复接口暂不可用，已临时只抓主贴：%s",
+                username,
+                summarize_fetch_error(exc, self._settings.twikit_cookies_file),
+            )
+            response, _ = await self._client.gql.user_tweets(user_id, max(1, limit), None)
         return self._timeline_response_to_events(
             response,
             username=username,
@@ -287,9 +314,9 @@ class TwikitTweetSource:
             limit=limit,
         )
 
-    async def fetch_latest(self, username: str, limit: int) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
         try:
-            return await self._fetch_user_tweets(username, limit)
+            return await self._fetch_user_tweets(username, limit, include_replies=include_replies)
         except Exception as exc:
             if not _is_twikit_transaction_error(exc):
                 raise
@@ -305,7 +332,7 @@ class TwikitTweetSource:
                 raise
 
             try:
-                return await self._fetch_user_tweets(username, limit)
+                return await self._fetch_user_tweets(username, limit, include_replies=include_replies)
             except Exception:
                 self._reset_client()
                 raise
@@ -325,11 +352,15 @@ class TwitterCollector:
     async def collect(self) -> tuple[List[TweetEvent], List[TargetFetchResult]]:
         events: List[TweetEvent] = []
         target_results: List[TargetFetchResult] = []
-        for username in self._settings.enabled_usernames():
+        for target in self._settings.monitor_targets:
+            if not target.enabled:
+                continue
+            username = target.username
             try:
                 fetched = await self._source.fetch_latest(
                     username=username,
                     limit=self._settings.twitter_fetch_limit,
+                    include_replies=target.include_replies,
                 )
                 previous_failures = self._failure_streaks.pop(username, 0)
                 if previous_failures:

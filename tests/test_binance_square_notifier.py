@@ -32,6 +32,30 @@ class BinanceSquareBodyTests(unittest.IsolatedAsyncioTestCase):
     @patch.dict(
         os.environ,
         {
+            "MONITOR_TARGETS": '[{"username":"elonmusk","enabled":true,"platforms":{"telegram":{"enabled":false},"binance_square":{"enabled":true}}}]',
+        },
+        clear=False,
+    )
+    def test_build_body_does_not_silently_truncate_long_text(self) -> None:
+        long_text = "long body " * 120
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.dict(
+                os.environ,
+                {"DELIVERY_STATUS_FILE": os.path.join(tmpdir, "delivery.json")},
+                clear=False,
+            ):
+                settings = load_settings()
+                store = DeliveryStatusStore(settings.delivery_status_file)
+                notifier = BinanceSquareNotifier(settings, store)
+
+                body_text = notifier._build_body_text(_event(long_text))
+
+        self.assertEqual(body_text, long_text.strip())
+        self.assertNotIn("...", body_text)
+
+    @patch.dict(
+        os.environ,
+        {
             "BINANCE_PUBLISH_TEMPLATE": "plain_with_link",
             "MONITOR_TARGETS": '[{"username":"elonmusk","enabled":true,"platforms":{"telegram":{"enabled":false},"binance_square":{"enabled":true}}}]',
         },

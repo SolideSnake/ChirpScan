@@ -108,6 +108,7 @@ def build_disabled_platform_routes() -> Dict[str, PlatformRoute]:
 class MonitorTarget:
     username: str
     enabled: bool = True
+    include_replies: bool = False
     platforms: Dict[str, PlatformRoute] = field(default_factory=build_default_platform_routes)
 
     def route_for(self, platform: str) -> PlatformRoute:
@@ -198,6 +199,7 @@ def _target_from_monitor_item(item: Dict[str, Any]) -> MonitorTarget:
     return MonitorTarget(
         username=str(item.get("username", "")).strip(),
         enabled=_coerce_bool(item.get("enabled"), True),
+        include_replies=_coerce_bool(item.get("include_replies"), False),
         platforms=_platform_routes_from_monitor_item(item),
     )
 
@@ -236,6 +238,7 @@ def _target_from_split_item(item: Dict[str, Any], *, platform: str) -> MonitorTa
     return MonitorTarget(
         username=username,
         enabled=_coerce_bool(item.get("enabled"), True),
+        include_replies=_coerce_bool(item.get("include_replies"), False),
         platforms=routes,
     )
 
@@ -276,6 +279,7 @@ def _merge_targets(*target_groups: List[MonitorTarget]) -> List[MonitorTarget]:
                 continue
             existing = merged[key]
             existing.enabled = existing.enabled or target.enabled
+            existing.include_replies = existing.include_replies or target.include_replies
             for platform, route in target.platforms.items():
                 if route.enabled or route.include_keywords or route.exclude_keywords:
                     existing.platforms[platform] = route

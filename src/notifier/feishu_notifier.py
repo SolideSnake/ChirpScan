@@ -56,12 +56,22 @@ class FeishuNotifier:
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(self._display_timezone()).strftime("%Y-%m-%d %H:%M:%S")
 
+    def _format_reply_target(self, event: TweetEvent) -> str:
+        if event.in_reply_to_user:
+            return f"@{event.in_reply_to_user}"
+        return "某人"
+
     def _format_message(self, event: TweetEvent) -> str:
         safe_text = event.text.strip() if event.text else "(无正文)"
         created_at = self._format_created_at(event.created_at)
+        author_line = (
+            f"作者：@{event.author} 回复了 {self._format_reply_target(event)}"
+            if event.tweet_type == "reply"
+            else f"作者：@{event.author}"
+        )
         return (
             "X 监控通知\n\n"
-            f"作者：@{event.author}\n\n"
+            f"{author_line}\n\n"
             f"{safe_text}\n\n"
             f"链接：{event.url}\n"
             f"时间：{created_at}"
@@ -197,4 +207,3 @@ class FeishuNotifier:
 
         text = self._format_message(event)
         return await self._send_text_record(text, label=f"tweet {event.tweet_id}", tweet_id=event.tweet_id)
-

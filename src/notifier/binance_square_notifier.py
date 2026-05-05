@@ -18,13 +18,6 @@ _URL_RE = re.compile(r"(?:https?://|www\.|t\.co/)\S+", re.IGNORECASE)
 _MANY_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 
-def _truncate_text(text: str, limit: int = 200) -> str:
-    cleaned = (text or "").strip()
-    if len(cleaned) <= limit:
-        return cleaned
-    return cleaned[: max(0, limit - 3)].rstrip() + "..."
-
-
 def clean_binance_body_text(text: str) -> str:
     normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     without_urls = _URL_RE.sub("", normalized)
@@ -62,7 +55,7 @@ class BinanceSquareNotifier:
         self._log = logging.getLogger("notifier.binance_square")
 
     def _build_body_text(self, event: TweetEvent) -> str:
-        return _truncate_text(clean_binance_body_text(event.text or ""))
+        return clean_binance_body_text(event.text or "")
 
     def _is_key_configured(self) -> bool:
         key = (self._settings.binance_square_api_key or "").strip()
@@ -93,6 +86,8 @@ class BinanceSquareNotifier:
             return False, "target disabled"
         if not route.enabled:
             return False, "binance disabled"
+        if event.tweet_type == "reply":
+            return False, "reply skipped for binance"
 
         target_filter = KeywordFilterSet(route.include_keywords, route.exclude_keywords)
         return target_filter.matches(event.text or "")

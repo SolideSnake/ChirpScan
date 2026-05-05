@@ -10,6 +10,7 @@ from typing import Any, Deque, Dict, List, Optional
 
 from src.config.settings import (
     Settings,
+    _coerce_bool,
     _normalize_filter_expression,
     load_settings,
 )
@@ -186,11 +187,15 @@ class RuntimeManager:
                 merged[key] = {
                     "username": username,
                     "enabled": bool(target.get("enabled", True)),
+                    "include_replies": _coerce_bool(target.get("include_replies"), False),
                     "platforms": self._platform_payload_template(),
                 }
                 order.append(key)
             else:
                 merged[key]["enabled"] = bool(merged[key].get("enabled", True) or target.get("enabled", True))
+                merged[key]["include_replies"] = _coerce_bool(
+                    merged[key].get("include_replies"), False
+                ) or _coerce_bool(target.get("include_replies"), False)
             return merged[key]
 
         def apply_platform(target: Dict[str, Any], platform: str, raw: Dict[str, Any] | None) -> None:
@@ -352,6 +357,7 @@ class RuntimeManager:
                 {
                     "username": target.username,
                     "enabled": target.enabled,
+                    "include_replies": target.include_replies,
                     "platforms": asdict(target)["platforms"],
                     "last_fetch_status": status,
                     "last_fetch_at": runtime_state.get("last_fetch_at"),

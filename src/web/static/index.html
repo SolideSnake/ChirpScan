@@ -481,6 +481,13 @@
         .join(",");
     }
 
+    function normalizeBoolean(raw, defaultValue = false) {
+      if (raw === null || raw === undefined) return defaultValue;
+      if (typeof raw === "boolean") return raw;
+      if (typeof raw === "number") return raw !== 0;
+      return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
+    }
+
     function normalizePlatformDefinitions(rawPlatforms) {
       const normalized = [];
       const seen = new Set();
@@ -557,6 +564,7 @@
       return {
         username: target.username,
         enabled: true,
+        include_replies: target.include_replies === true,
         include_keywords: include,
         exclude_keywords: exclude,
         platforms,
@@ -571,6 +579,7 @@
       return {
         username,
         enabled: true,
+        include_replies: false,
         include_keywords: "",
         exclude_keywords: "",
         platforms,
@@ -622,6 +631,7 @@
       return {
         username,
         enabled: item.enabled !== false,
+        include_replies: normalizeBoolean(item.include_replies, false),
         include_keywords: includeKeywords,
         exclude_keywords: excludeKeywords,
         platforms: normalizedPlatforms,
@@ -890,7 +900,7 @@
       if (!monitorTargets.length) {
         const empty = document.createElement("div");
         empty.className = "empty-state";
-        empty.textContent = "还没有监控目标。新增一个用户名后，选择电报或币安广场平台。";
+        empty.textContent = "还没有监控目标。新增一个用户名后，选择需要推送的平台。";
         list.appendChild(empty);
         return;
       }
@@ -910,9 +920,10 @@
         const fetchStatus = !target.enabled ? "paused" : (runtime.last_fetch_status || "idle");
         const streakText = runtime.fetch_failure_streak ? ` / 连续 ${runtime.fetch_failure_streak} 次` : "";
         const channelText = `${platformEnabledCount(target)} 个渠道已开启`;
+        const scopeText = target.include_replies ? "主贴 + 回复" : "只监控主贴";
         detail.textContent = runtime.last_error
           ? `${fetchStatus === "warning" ? "最近波动" : "最近错误"}：${runtime.last_error}${streakText}`
-          : `最近抓取：${formatTime(runtime.last_fetch_at)} / 本轮结果 ${runtime.last_fetched_count || 0} 条 / ${channelText}`;
+          : `最近抓取：${formatTime(runtime.last_fetch_at)} / ${scopeText} / 本轮结果 ${runtime.last_fetched_count || 0} 条 / ${channelText}`;
         meta.append(title, detail);
         const badge = document.createElement("div");
         badge.className = `status-badge ${fetchStatus}`;
@@ -927,6 +938,13 @@
                 : "等待中";
         const actions = document.createElement("div");
         actions.className = "row-actions";
+        actions.appendChild(createToggle(target.include_replies === true, scopeText, (checked) => {
+          target.include_replies = checked;
+          target.enabled = true;
+          setHint(`@${target.username} 已切换为${checked ? "主贴 + 回复" : "只监控主贴"}，正在自动保存。`, "warning");
+          renderTargetList();
+          scheduleAutoSave();
+        }));
         for (const definition of availablePlatforms) {
           actions.appendChild(createPlatformSwitch(target, definition, renderTargetList));
         }
