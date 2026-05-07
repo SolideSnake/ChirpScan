@@ -366,3 +366,22 @@ node -e "const fs=require('fs'); const html=fs.readFileSync('src/web/static/inde
 - `tweets_and_replies`：抓取目标用户的主贴和回复，回复与主贴共用同一套平台开关和关键词规则。
 
 采集层会把回复解析为 `TweetEvent(tweet_type="reply")`，并保留 `conversation_id`、`in_reply_to_status_id`、`in_reply_to_tweet_id`、`in_reply_to_user` 和 `in_reply_to_user_id`。电报和飞书会把回复显示为“回复了 @xxx”，适合做预警通知；币安广场默认跳过回复，避免把互动回复当作对外内容发布。
+
+### 回复抓取失败原因与兜底
+
+X 的主贴接口和回复接口独立演进。当前 twikit 主要依赖 X Web GraphQL：
+
+- 主贴：`UserTweets`
+- 回复时间线：`UserTweetsAndReplies`
+- 搜索兜底：`SearchTimeline`，查询 `from:{username} filter:replies`
+
+历史上回复监控失败的主要表现是 `UserTweetsAndReplies` 返回 `404`。这通常不是目标账号不存在，而是 X 前端 GraphQL operation、请求参数或 `x-client-transaction-id` 签名逻辑变化，导致 twikit 当前请求形态与 X 真实前端不一致。
+
+运行时策略：
+
+1. `tweets` 模式只请求 `UserTweets`。
+2. `replies` 模式先请求 `UserTweetsAndReplies`，失败后尝试 `SearchTimeline` 兜底，只保留解析为 `reply` 的事件。
+3. `tweets_and_replies` 模式先请求回复时间线；如果失败，尝试搜索兜底补回复，再抓主贴并合并去重。
+4. 如果回复时间线和搜索兜底都不可用，`tweets_and_replies` 会临时退回主贴，避免主贴监控被回复接口拖死。
+
+日志中的“回复时间线接口暂不可用”“搜索兜底也不可用”属于 X 采集侧波动，不应解读为通知平台发送失败。
