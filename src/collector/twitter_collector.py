@@ -1,11 +1,17 @@
 import asyncio
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Protocol
 
-from src.config.settings import Settings
+from src.config.settings import (
+    MONITOR_MODE_REPLIES,
+    MONITOR_MODE_TWEETS,
+    Settings,
+    _normalize_monitor_mode,
+)
 from src.models.event import TweetEvent
 from src.store.dedup_store import DedupStore
 
@@ -100,7 +106,7 @@ def summarize_fetch_error(exc: Exception, cookies_file: str = "") -> str:
 
 
 class TweetSource(Protocol):
-    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, monitor_mode: str = MONITOR_MODE_TWEETS) -> List[TweetEvent]:
         raise NotImplementedError
 
 
@@ -108,10 +114,13 @@ class MockTweetSource:
     def __init__(self) -> None:
         self._counter = 0
 
-    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, monitor_mode: str = MONITOR_MODE_TWEETS) -> List[TweetEvent]:
         self._counter += 1
         now = datetime.now(timezone.utc).isoformat()
         tweet_id = f"mock-{username}-{self._counter}"
+        monitor_mode = _normalize_monitor_mode(monitor_mode)
+        is_reply = monitor_mode == MONITOR_MODE_REPLIES
+        conversation_id = f"mock-root-{username}-{self._counter}" if is_reply else tweet_id
         events = [
             TweetEvent(
                 tweet_id=tweet_id,
@@ -119,6 +128,12 @@ class MockTweetSource:
                 text=f"[mock] message #{self._counter} from @{username}",
                 url=f"https://x.com/{username}/status/{tweet_id}",
                 created_at=now,
+                tweet_type="reply" if is_reply else "post",
+                in_reply_to_status_id=conversation_id if is_reply else "",
+                in_reply_to_tweet_id=conversation_id if is_reply else "",
+                in_reply_to_user="mock_target" if is_reply else "",
+                in_reply_to_user_id="mock-user-id" if is_reply else "",
+                conversation_id=conversation_id,
             )
         ]
         await asyncio.sleep(0)
@@ -126,6 +141,17 @@ class MockTweetSource:
 
 
 class TwikitTweetSource:
+    _graphql_operation_names = {
+        MONITOR_MODE_TWEETS: "UserTweets",
+        MONITOR_MODE_REPLIES: "UserTweetsAndReplies",
+    }
+    _graphql_endpoint_attrs = {
+        "SearchTimeline": "SEARCH_TIMELINE",
+        "UserTweets": "USER_TWEETS",
+        "UserTweetsAndReplies": "USER_TWEETS_AND_REPLIES",
+    }
+    _cached_query_ids: Dict[str, str] = {}
+
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._log = logging.getLogger("collector.twikit")
@@ -194,6 +220,207 @@ class TwikitTweetSource:
         self._transaction_fallback_enabled = True
         return True
 
+    def _x_bundle_candidates(self) -> List[Path]:
+        repo_root = Path(__file__).resolve().parents[2]
+        return [
+            Path.cwd() / ".state" / "x-main.js",
+            repo_root / ".state" / "x-main.js",
+        ]
+
+    def _extract_query_id_from_text(self, operation_name: str, text: str) -> str:
+        escaped = re.escape(operation_name)
+        patterns = (
+            rf'queryId:"([^"]+)",operationName:"{escaped}"',
+            rf'operationName:"{escaped}".{{0,400}}?queryId:"([^"]+)"',
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1)
+        return ""
+
+    def _discover_graphql_query_id(self, operation_name: str) -> str:
+        cached = self._cached_query_ids.get(operation_name)
+        if cached:
+            return cached
+
+        seen_paths: set[Path] = set()
+        for path in self._x_bundle_candidates():
+            resolved = path.resolve()
+            if resolved in seen_paths or not resolved.exists():
+                continue
+            seen_paths.add(resolved)
+            try:
+                query_id = self._extract_query_id_from_text(
+                    operation_name,
+                    resolved.read_text(encoding="utf-8", errors="ignore"),
+                )
+            except OSError as exc:
+                self._log.debug("读取 X 前端 bundle 失败：%s", exc)
+                continue
+            if query_id:
+                self._cached_query_ids[operation_name] = query_id
+                return query_id
+        return ""
+
+    def _patch_twikit_graphql_endpoint(self, operation_name: str) -> bool:
+        endpoint_attr = self._graphql_endpoint_attrs.get(operation_name)
+        if not endpoint_attr:
+            return False
+
+        query_id = self._discover_graphql_query_id(operation_name)
+        if not query_id:
+            return False
+
+        try:
+            from twikit.client.gql import Endpoint  # type: ignore
+        except ImportError:
+            return False
+
+        url = Endpoint.url(f"{query_id}/{operation_name}")
+        if getattr(Endpoint, endpoint_attr, "") == url:
+            return False
+        setattr(Endpoint, endpoint_attr, url)
+        self._log.info("已从 X 前端 bundle 刷新 %s GraphQL endpoint。", operation_name)
+        return True
+
+    def _tweet_objects_to_events(
+        self,
+        tweets: Any,
+        *,
+        username: str,
+        user_id: str,
+        limit: int,
+    ) -> List[TweetEvent]:
+        events: List[TweetEvent] = []
+        seen: set[str] = set()
+        for tweet in tweets or []:
+            legacy = getattr(tweet, "_legacy", {}) or {}
+            if not isinstance(legacy, dict):
+                legacy = {}
+            if user_id and str(legacy.get("user_id_str") or "").strip() not in {"", user_id}:
+                continue
+
+            tweet_id = str(getattr(tweet, "id", "") or legacy.get("id_str") or "").strip()
+            if not tweet_id or tweet_id in seen:
+                continue
+            seen.add(tweet_id)
+
+            in_reply_to_tweet_id = str(
+                getattr(tweet, "in_reply_to", "") or legacy.get("in_reply_to_status_id_str") or ""
+            ).strip()
+            in_reply_to_user = str(legacy.get("in_reply_to_screen_name") or "").strip().lstrip("@")
+            in_reply_to_user_id = str(legacy.get("in_reply_to_user_id_str") or "").strip()
+            conversation_id = str(legacy.get("conversation_id_str") or legacy.get("conversation_id") or "").strip()
+            tweet_type = "reply" if in_reply_to_tweet_id or (conversation_id and conversation_id != tweet_id) else "post"
+
+            text = str(getattr(tweet, "full_text", "") or getattr(tweet, "text", "") or "").strip()
+            events.append(
+                TweetEvent(
+                    tweet_id=tweet_id,
+                    author=username,
+                    text=text,
+                    url=f"https://x.com/{username}/status/{tweet_id}",
+                    created_at=str(getattr(tweet, "created_at", "") or legacy.get("created_at") or ""),
+                    tweet_type=tweet_type,
+                    in_reply_to_status_id=in_reply_to_tweet_id,
+                    in_reply_to_tweet_id=in_reply_to_tweet_id,
+                    in_reply_to_user=in_reply_to_user,
+                    in_reply_to_user_id=in_reply_to_user_id,
+                    conversation_id=conversation_id,
+                )
+            )
+            if len(events) >= limit:
+                break
+        return events
+
+    def _dedupe_events(self, events: List[TweetEvent]) -> List[TweetEvent]:
+        deduped: List[TweetEvent] = []
+        seen: set[str] = set()
+        for event in events:
+            if event.tweet_id in seen:
+                continue
+            seen.add(event.tweet_id)
+            deduped.append(event)
+        return deduped
+
+    async def _fetch_user_replies_via_search(self, username: str, user_id: str, limit: int) -> List[TweetEvent]:
+        await self._ensure_client()
+        assert self._client is not None
+
+        self._patch_twikit_graphql_endpoint("SearchTimeline")
+        search_limit = min(20, max(1, limit * 3))
+        query = f"from:{username} filter:replies"
+        response, _ = await self._search_timeline_via_post(query, search_limit)
+        events = self._timeline_response_to_events(
+            response,
+            username=username,
+            user_id=user_id,
+            limit=search_limit,
+        )
+        return [event for event in events if event.tweet_type == "reply"][:limit]
+
+    async def _user_timeline_via_post(
+        self,
+        operation_name: str,
+        user_id: str,
+        count: int,
+    ) -> tuple[Dict[str, Any], Any]:
+        await self._ensure_client()
+        assert self._client is not None
+
+        endpoint_attr = self._graphql_endpoint_attrs.get(operation_name)
+        if not endpoint_attr:
+            raise RuntimeError(f"Unsupported X GraphQL operation: {operation_name}")
+
+        self._patch_twikit_graphql_endpoint(operation_name)
+        try:
+            from twikit.client.gql import Endpoint, FEATURES  # type: ignore
+
+            endpoint = getattr(Endpoint, endpoint_attr)
+        except ImportError:
+            endpoint = f"https://x.com/i/api/graphql/{operation_name}"
+            FEATURES = {}
+
+        variables = {
+            "userId": user_id,
+            "count": count,
+            "includePromotedContent": True,
+            "withQuickPromoteEligibilityTweetFields": True,
+            "withVoice": True,
+            "withV2Timeline": True,
+        }
+        return await self._client.gql.gql_post(
+            endpoint,
+            variables,
+            FEATURES,
+        )
+
+    async def _search_timeline_via_post(self, query: str, count: int) -> tuple[Dict[str, Any], Any]:
+        await self._ensure_client()
+        assert self._client is not None
+
+        self._patch_twikit_graphql_endpoint("SearchTimeline")
+        try:
+            from twikit.client.gql import Endpoint, FEATURES  # type: ignore
+
+            endpoint = Endpoint.SEARCH_TIMELINE
+        except ImportError:
+            endpoint = "https://x.com/i/api/graphql/SearchTimeline"
+            FEATURES = {}
+
+        variables = {
+            "rawQuery": query,
+            "count": count,
+            "querySource": "typed_query",
+            "product": "Latest",
+        }
+        return await self._client.gql.gql_post(
+            endpoint,
+            variables,
+            FEATURES,
+        )
+
     def _iter_tweet_results(self, obj: Any) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
         if isinstance(obj, dict):
@@ -249,6 +476,7 @@ class TwikitTweetSource:
             text = note_text or str(legacy.get("full_text") or legacy.get("text") or "").strip()
             in_reply_to_status_id = str(legacy.get("in_reply_to_status_id_str") or "").strip()
             in_reply_to_user = str(legacy.get("in_reply_to_screen_name") or "").strip().lstrip("@")
+            in_reply_to_user_id = str(legacy.get("in_reply_to_user_id_str") or "").strip()
             conversation_id = str(legacy.get("conversation_id_str") or legacy.get("conversation_id") or "").strip()
             tweet_type = "reply" if in_reply_to_status_id or (conversation_id and conversation_id != tweet_id) else "post"
             events.append(
@@ -260,7 +488,9 @@ class TwikitTweetSource:
                     created_at=str(legacy.get("created_at") or ""),
                     tweet_type=tweet_type,
                     in_reply_to_status_id=in_reply_to_status_id,
+                    in_reply_to_tweet_id=in_reply_to_status_id,
                     in_reply_to_user=in_reply_to_user,
+                    in_reply_to_user_id=in_reply_to_user_id,
                     conversation_id=conversation_id,
                 )
             )
@@ -290,33 +520,84 @@ class TwikitTweetSource:
         self._user_cache[cache_key] = user_id
         return user_id
 
-    async def _fetch_user_tweets(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
+    async def _fetch_user_tweets(self, username: str, limit: int, monitor_mode: str = MONITOR_MODE_TWEETS) -> List[TweetEvent]:
         await self._ensure_client()
         assert self._client is not None
 
         user_id = await self._fetch_user_id(username)
-        fetcher = self._client.gql.user_tweets_and_replies if include_replies else self._client.gql.user_tweets
+        monitor_mode = _normalize_monitor_mode(monitor_mode)
+        fetch_limit = max(1, limit * 3) if monitor_mode == MONITOR_MODE_REPLIES else max(1, limit)
+        fetcher = (
+            self._client.gql.user_tweets
+            if monitor_mode == MONITOR_MODE_TWEETS
+            else self._client.gql.user_tweets_and_replies
+        )
+        operation_name = (
+            self._graphql_operation_names[MONITOR_MODE_TWEETS]
+            if monitor_mode == MONITOR_MODE_TWEETS
+            else self._graphql_operation_names[MONITOR_MODE_REPLIES]
+        )
         try:
-            response, _ = await fetcher(user_id, max(1, limit), None)
+            response, _ = await fetcher(user_id, fetch_limit, None)
         except Exception as exc:
-            if not include_replies or not _is_twikit_not_found_error(exc):
+            if _is_twikit_not_found_error(exc) and monitor_mode != MONITOR_MODE_TWEETS:
+                try:
+                    response, _ = await self._user_timeline_via_post(operation_name, user_id, fetch_limit)
+                except Exception as retry_exc:
+                    if not _is_twikit_not_found_error(retry_exc):
+                        raise
+                    exc = retry_exc
+                else:
+                    exc = None
+
+            if exc is None:
+                pass
+            elif monitor_mode == MONITOR_MODE_TWEETS or not _is_twikit_not_found_error(exc):
                 raise
-            self._log.warning(
-                "@%s 回复接口暂不可用，已临时只抓主贴：%s",
-                username,
-                summarize_fetch_error(exc, self._settings.twikit_cookies_file),
-            )
-            response, _ = await self._client.gql.user_tweets(user_id, max(1, limit), None)
-        return self._timeline_response_to_events(
+            elif monitor_mode == MONITOR_MODE_REPLIES:
+                self._log.warning(
+                    "@%s 回复时间线接口暂不可用，改用搜索兜底抓取回复：%s",
+                    username,
+                    summarize_fetch_error(exc, self._settings.twikit_cookies_file),
+                )
+                return await self._fetch_user_replies_via_search(username, user_id, limit)
+            else:
+                self._log.warning(
+                    "@%s 回复时间线接口暂不可用，改用搜索兜底抓取回复：%s",
+                    username,
+                    summarize_fetch_error(exc, self._settings.twikit_cookies_file),
+                )
+                try:
+                    replies = await self._fetch_user_replies_via_search(username, user_id, limit)
+                except Exception as search_exc:
+                    self._log.warning(
+                        "@%s 搜索兜底也不可用，已临时只抓主贴：%s",
+                        username,
+                        summarize_fetch_error(search_exc, self._settings.twikit_cookies_file),
+                    )
+                    replies = []
+                response, _ = await self._client.gql.user_tweets(user_id, fetch_limit, None)
+                posts = self._timeline_response_to_events(
+                    response,
+                    username=username,
+                    user_id=user_id,
+                    limit=fetch_limit,
+                )
+                return self._dedupe_events(posts + replies)
+        events = self._timeline_response_to_events(
             response,
             username=username,
             user_id=user_id,
-            limit=limit,
+            limit=fetch_limit,
         )
+        if monitor_mode == MONITOR_MODE_REPLIES:
+            events = [event for event in events if event.tweet_type == "reply"][:limit]
+        return events
 
-    async def fetch_latest(self, username: str, limit: int, include_replies: bool = False) -> List[TweetEvent]:
+    async def fetch_latest(self, username: str, limit: int, monitor_mode: str = MONITOR_MODE_TWEETS) -> List[TweetEvent]:
+        monitor_mode = _normalize_monitor_mode(monitor_mode)
         try:
-            return await self._fetch_user_tweets(username, limit, include_replies=include_replies)
+            return await self._fetch_user_tweets(username, limit, monitor_mode=monitor_mode)
         except Exception as exc:
             if not _is_twikit_transaction_error(exc):
                 raise
@@ -332,7 +613,7 @@ class TwikitTweetSource:
                 raise
 
             try:
-                return await self._fetch_user_tweets(username, limit, include_replies=include_replies)
+                return await self._fetch_user_tweets(username, limit, monitor_mode=monitor_mode)
             except Exception:
                 self._reset_client()
                 raise
@@ -360,7 +641,7 @@ class TwitterCollector:
                 fetched = await self._source.fetch_latest(
                     username=username,
                     limit=self._settings.twitter_fetch_limit,
-                    include_replies=target.include_replies,
+                    monitor_mode=target.monitor_mode,
                 )
                 previous_failures = self._failure_streaks.pop(username, 0)
                 if previous_failures:

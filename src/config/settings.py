@@ -5,6 +5,15 @@ from typing import Any, Dict, List
 
 from src.notifier.registry import PUBLISHER_DEFINITIONS, PUBLISHER_DEFINITIONS_BY_ID
 
+MONITOR_MODE_TWEETS = "tweets"
+MONITOR_MODE_REPLIES = "replies"
+MONITOR_MODE_TWEETS_AND_REPLIES = "tweets_and_replies"
+MONITOR_MODES = {
+    MONITOR_MODE_TWEETS,
+    MONITOR_MODE_REPLIES,
+    MONITOR_MODE_TWEETS_AND_REPLIES,
+}
+
 
 def _as_int(name: str, default: int) -> int:
     raw = os.getenv(name, str(default))
@@ -78,6 +87,36 @@ def _normalize_binance_template(raw: object) -> str:
     return value if value in {"plain", "plain_with_link"} else "plain_with_link"
 
 
+def _normalize_monitor_mode(raw: object, include_replies: object = None) -> str:
+    value = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "tweet": MONITOR_MODE_TWEETS,
+        "tweets": MONITOR_MODE_TWEETS,
+        "post": MONITOR_MODE_TWEETS,
+        "posts": MONITOR_MODE_TWEETS,
+        "reply": MONITOR_MODE_REPLIES,
+        "replies": MONITOR_MODE_REPLIES,
+        "tweetsandreplies": MONITOR_MODE_TWEETS_AND_REPLIES,
+        "tweets_and_replies": MONITOR_MODE_TWEETS_AND_REPLIES,
+        "tweet_and_replies": MONITOR_MODE_TWEETS_AND_REPLIES,
+        "posts_and_replies": MONITOR_MODE_TWEETS_AND_REPLIES,
+        "all": MONITOR_MODE_TWEETS_AND_REPLIES,
+    }
+    if value in aliases:
+        return aliases[value]
+    return MONITOR_MODE_TWEETS_AND_REPLIES if _coerce_bool(include_replies, False) else MONITOR_MODE_TWEETS
+
+
+def _merge_monitor_modes(left: str, right: str) -> str:
+    left = _normalize_monitor_mode(left)
+    right = _normalize_monitor_mode(right)
+    if left == right:
+        return left
+    if MONITOR_MODE_TWEETS_AND_REPLIES in {left, right}:
+        return MONITOR_MODE_TWEETS_AND_REPLIES
+    return MONITOR_MODE_TWEETS_AND_REPLIES
+
+
 def _default_enabled_for_platform(platform: str) -> bool:
     definition = PUBLISHER_DEFINITIONS_BY_ID.get(platform)
     return definition.default_enabled if definition is not None else False
@@ -108,8 +147,13 @@ def build_disabled_platform_routes() -> Dict[str, PlatformRoute]:
 class MonitorTarget:
     username: str
     enabled: bool = True
+    monitor_mode: str = MONITOR_MODE_TWEETS
     include_replies: bool = False
     platforms: Dict[str, PlatformRoute] = field(default_factory=build_default_platform_routes)
+
+    def __post_init__(self) -> None:
+        self.monitor_mode = _normalize_monitor_mode(self.monitor_mode, self.include_replies)
+        self.include_replies = self.monitor_mode != MONITOR_MODE_TWEETS
 
     def route_for(self, platform: str) -> PlatformRoute:
         route = self.platforms.get(platform)
@@ -196,10 +240,12 @@ def _platform_routes_from_monitor_item(item: Dict[str, Any]) -> Dict[str, Platfo
 
 
 def _target_from_monitor_item(item: Dict[str, Any]) -> MonitorTarget:
+    monitor_mode = _normalize_monitor_mode(item.get("monitor_mode"), item.get("include_replies"))
     return MonitorTarget(
         username=str(item.get("username", "")).strip(),
         enabled=_coerce_bool(item.get("enabled"), True),
-        include_replies=_coerce_bool(item.get("include_replies"), False),
+        monitor_mode=monitor_mode,
+        include_replies=monitor_mode != MONITOR_MODE_TWEETS,
         platforms=_platform_routes_from_monitor_item(item),
     )
 
@@ -207,6 +253,7 @@ def _target_from_monitor_item(item: Dict[str, Any]) -> MonitorTarget:
 def _target_from_split_item(item: Dict[str, Any], *, platform: str) -> MonitorTarget:
     username = str(item.get("username", "")).strip()
     routes = build_disabled_platform_routes()
+    monitor_mode = _normalize_monitor_mode(item.get("monitor_mode"), item.get("include_replies"))
 
     if platform == "telegram":
         routes["telegram"] = _route_from_dict(
@@ -238,7 +285,8 @@ def _target_from_split_item(item: Dict[str, Any], *, platform: str) -> MonitorTa
     return MonitorTarget(
         username=username,
         enabled=_coerce_bool(item.get("enabled"), True),
-        include_replies=_coerce_bool(item.get("include_replies"), False),
+        monitor_mode=monitor_mode,
+        include_replies=monitor_mode != MONITOR_MODE_TWEETS,
         platforms=routes,
     )
 
@@ -279,7 +327,8 @@ def _merge_targets(*target_groups: List[MonitorTarget]) -> List[MonitorTarget]:
                 continue
             existing = merged[key]
             existing.enabled = existing.enabled or target.enabled
-            existing.include_replies = existing.include_replies or target.include_replies
+            existing.monitor_mode = _merge_monitor_modes(existing.monitor_mode, target.monitor_mode)
+            existing.include_replies = existing.monitor_mode != MONITOR_MODE_TWEETS
             for platform, route in target.platforms.items():
                 if route.enabled or route.include_keywords or route.exclude_keywords:
                     existing.platforms[platform] = route

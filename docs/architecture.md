@@ -359,9 +359,10 @@ node -e "const fs=require('fs'); const html=fs.readFileSync('src/web/static/inde
 
 ## 15. 回复监控策略
 
-每个 `MonitorTarget` 可以配置 `include_replies`：
+每个 `MonitorTarget` 可以配置 `monitor_mode`，旧的 `include_replies` 仍会被兼容读取：
 
-- `false`：默认策略，只抓取目标用户主页主贴，保持 2.0 原有行为。
-- `true`：抓取目标用户的主贴和回复，回复与主贴共用同一套平台开关和关键词规则。
+- `tweets`：默认策略，只抓取目标用户主页主贴，保持 2.0 原有行为。
+- `replies`：只抓取目标用户发出的回复，适合观察“目标账号回了谁”。
+- `tweets_and_replies`：抓取目标用户的主贴和回复，回复与主贴共用同一套平台开关和关键词规则。
 
-采集层会把回复解析为 `TweetEvent(tweet_type="reply")`，并保留 `in_reply_to_status_id`、`in_reply_to_user` 和 `conversation_id`。电报和飞书会把回复显示为“回复了 @xxx”，适合做预警通知；币安广场默认跳过回复，避免把互动回复当作对外内容发布。
+采集层会把回复解析为 `TweetEvent(tweet_type="reply")`，并保留 `conversation_id`、`in_reply_to_status_id`、`in_reply_to_tweet_id`、`in_reply_to_user` 和 `in_reply_to_user_id`。电报和飞书会把回复显示为“回复了 @xxx”，适合做预警通知；币安广场默认跳过回复，避免把互动回复当作对外内容发布。

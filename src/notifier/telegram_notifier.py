@@ -55,6 +55,8 @@ class TelegramNotifier:
     def _format_reply_target(self, event: TweetEvent) -> str:
         if event.in_reply_to_user:
             return f"@{event.in_reply_to_user}"
+        if event.in_reply_to_user_id:
+            return f"user {event.in_reply_to_user_id}"
         return "某人"
 
     def _format_message(self, event: TweetEvent) -> str:

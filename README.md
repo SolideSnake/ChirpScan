@@ -6,7 +6,7 @@ ChirpScan 是一个本地运行的 X 监控与平台推送工具。2.0 版本把
 
 - 新增币安广场发布模块，支持按目标单独开启或关闭。
 - 目标配置统一为 `MONITOR_TARGETS`，一个 X 用户下分别配置电报、飞书和币安广场规则。
-- 监控目标新增 `include_replies` 开关，默认只监控主贴；开启后抓取主贴和回复。
+- 监控目标新增 `monitor_mode` 三态：`tweets` 只监控主贴，`replies` 只监控回复，`tweets_and_replies` 同时监控主贴和回复；旧的 `include_replies` 仍兼容。
 - 电报、飞书和币安广场各自拥有独立关键词规则，互不影响。
 - 币安广场发布状态会持久化，避免同一条推文重复发文。
 - 日志终端改为业务化事件列表，常见 X 请求日志会显示为短句。
@@ -70,6 +70,7 @@ http://127.0.0.1:8000
   {
     "username": "elonmusk",
     "enabled": true,
+    "monitor_mode": "tweets",
     "include_replies": false,
     "platforms": {
       "telegram": {
@@ -97,7 +98,7 @@ http://127.0.0.1:8000
 - `telegram.enabled=true` 表示该目标会推送到电报。
 - `feishu.enabled=true` 表示该目标会推送到飞书 Webhook。
 - `binance_square.enabled=true` 表示该目标会发布到币安广场。
-- `include_replies=false` 表示只监控主贴；改为 `true` 后会同时监控该用户的回复。回复默认只进入电报和飞书通知，币安广场会跳过。
+- `monitor_mode=tweets` 表示只监控主贴；`replies` 表示只监控该用户发出的回复；`tweets_and_replies` 表示两者都监控。回复默认只进入电报和飞书通知，币安广场会跳过。
 - 未设置关键词时，会匹配该目标抓到的全部新推文。
 - 币安广场没有单独的全局开关需要配置，是否发布由每个目标的币安广场开关决定。
 

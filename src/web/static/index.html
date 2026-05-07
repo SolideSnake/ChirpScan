@@ -235,6 +235,10 @@
     .status-badge.skipped, .status-badge.paused { color: #ffe3ba; border-color: rgba(255, 188, 109, 0.3); background: rgba(255, 188, 109, 0.12); }
     .toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
     .toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .segmented-control { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border-radius: 10px; border: 1px solid rgba(118, 184, 255, 0.16); background: rgba(4, 10, 20, 0.46); }
+    .segmented-option { min-height: 28px; padding: 5px 8px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 12px; white-space: nowrap; cursor: pointer; }
+    .segmented-option:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .segmented-option.is-active { color: #e6f1ff; background: rgba(118, 184, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(118, 184, 255, 0.16); }
     .empty-state { padding: 16px; text-align: center; color: var(--muted); border-radius: 12px; border: 1px dashed rgba(118, 184, 255, 0.18); background: rgba(255, 255, 255, 0.02); }
     .save-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
     .save-status { min-height: 20px; color: var(--muted); font-size: 13px; }
@@ -549,9 +553,30 @@
       return Object.values(target.platforms || {}).filter((route) => route?.enabled).length;
     }
 
+    const monitorModeOptions = [
+      { value: "tweets", label: "主贴" },
+      { value: "replies", label: "回复" },
+      { value: "tweets_and_replies", label: "主贴 + 回复" },
+    ];
+
+    function normalizeMonitorMode(value, includeReplies = false) {
+      const raw = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+      if (raw === "tweets" || raw === "tweet" || raw === "posts" || raw === "post") return "tweets";
+      if (raw === "replies" || raw === "reply") return "replies";
+      if (raw === "tweets_and_replies" || raw === "tweetsandreplies" || raw === "posts_and_replies" || raw === "all") {
+        return "tweets_and_replies";
+      }
+      return includeReplies ? "tweets_and_replies" : "tweets";
+    }
+
+    function monitorModeLabel(mode) {
+      return monitorModeOptions.find((item) => item.value === mode)?.label || "主贴";
+    }
+
     function serializeTargetForConfig(target) {
       const include = normalizeFilterExpression(target.include_keywords);
       const exclude = normalizeFilterExpression(target.exclude_keywords);
+      const monitorMode = normalizeMonitorMode(target.monitor_mode, target.include_replies);
       const platforms = {};
       for (const definition of availablePlatforms) {
         const route = target.platforms?.[definition.platform] || createPlatformRoute({}, definition.default_enabled);
@@ -564,7 +589,8 @@
       return {
         username: target.username,
         enabled: true,
-        include_replies: target.include_replies === true,
+        monitor_mode: monitorMode,
+        include_replies: monitorMode !== "tweets",
         include_keywords: include,
         exclude_keywords: exclude,
         platforms,
@@ -579,6 +605,7 @@
       return {
         username,
         enabled: true,
+        monitor_mode: "tweets",
         include_replies: false,
         include_keywords: "",
         exclude_keywords: "",
@@ -628,10 +655,12 @@
         legacyBinance.exclude_keywords,
         sharedKeywordsFromPlatforms(normalizedPlatforms, "exclude_keywords"),
       );
+      const monitorMode = normalizeMonitorMode(item.monitor_mode, normalizeBoolean(item.include_replies, false));
       return {
         username,
         enabled: item.enabled !== false,
-        include_replies: normalizeBoolean(item.include_replies, false),
+        monitor_mode: monitorMode,
+        include_replies: monitorMode !== "tweets",
         include_keywords: includeKeywords,
         exclude_keywords: excludeKeywords,
         platforms: normalizedPlatforms,
@@ -738,6 +767,21 @@
       span.textContent = text;
       label.append(input, span);
       return label;
+    }
+
+    function createSegmentedControl(options, value, onChange) {
+      const group = document.createElement("div");
+      group.className = "segmented-control";
+      for (const option of options) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `segmented-option${option.value === value ? " is-active" : ""}`;
+        button.setAttribute("aria-pressed", option.value === value ? "true" : "false");
+        button.textContent = option.label;
+        button.addEventListener("click", () => onChange(option.value));
+        group.appendChild(button);
+      }
+      return group;
     }
 
     function parseClauses(expression) {
@@ -920,7 +964,10 @@
         const fetchStatus = !target.enabled ? "paused" : (runtime.last_fetch_status || "idle");
         const streakText = runtime.fetch_failure_streak ? ` / 连续 ${runtime.fetch_failure_streak} 次` : "";
         const channelText = `${platformEnabledCount(target)} 个渠道已开启`;
-        const scopeText = target.include_replies ? "主贴 + 回复" : "只监控主贴";
+        const monitorMode = normalizeMonitorMode(target.monitor_mode, target.include_replies);
+        target.monitor_mode = monitorMode;
+        target.include_replies = monitorMode !== "tweets";
+        const scopeText = monitorModeLabel(monitorMode);
         detail.textContent = runtime.last_error
           ? `${fetchStatus === "warning" ? "最近波动" : "最近错误"}：${runtime.last_error}${streakText}`
           : `最近抓取：${formatTime(runtime.last_fetch_at)} / ${scopeText} / 本轮结果 ${runtime.last_fetched_count || 0} 条 / ${channelText}`;
@@ -938,10 +985,11 @@
                 : "等待中";
         const actions = document.createElement("div");
         actions.className = "row-actions";
-        actions.appendChild(createToggle(target.include_replies === true, scopeText, (checked) => {
-          target.include_replies = checked;
+        actions.appendChild(createSegmentedControl(monitorModeOptions, monitorMode, (mode) => {
+          target.monitor_mode = mode;
+          target.include_replies = mode !== "tweets";
           target.enabled = true;
-          setHint(`@${target.username} 已切换为${checked ? "主贴 + 回复" : "只监控主贴"}，正在自动保存。`, "warning");
+          setHint(`@${target.username} 已切换为${monitorModeLabel(mode)}，正在自动保存。`, "warning");
           renderTargetList();
           scheduleAutoSave();
         }));

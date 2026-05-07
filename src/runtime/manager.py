@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any, Deque, Dict, List, Optional
 
 from src.config.settings import (
+    MONITOR_MODE_TWEETS,
     Settings,
-    _coerce_bool,
+    _merge_monitor_modes,
+    _normalize_monitor_mode,
     _normalize_filter_expression,
     load_settings,
 )
@@ -183,19 +185,24 @@ class RuntimeManager:
             key = username.lower()
             if not username:
                 return {}
+            monitor_mode = _normalize_monitor_mode(target.get("monitor_mode"), target.get("include_replies"))
             if key not in merged:
                 merged[key] = {
                     "username": username,
                     "enabled": bool(target.get("enabled", True)),
-                    "include_replies": _coerce_bool(target.get("include_replies"), False),
+                    "monitor_mode": monitor_mode,
+                    "include_replies": monitor_mode != MONITOR_MODE_TWEETS,
                     "platforms": self._platform_payload_template(),
                 }
                 order.append(key)
             else:
                 merged[key]["enabled"] = bool(merged[key].get("enabled", True) or target.get("enabled", True))
-                merged[key]["include_replies"] = _coerce_bool(
-                    merged[key].get("include_replies"), False
-                ) or _coerce_bool(target.get("include_replies"), False)
+                merged_mode = _merge_monitor_modes(
+                    str(merged[key].get("monitor_mode", "")),
+                    monitor_mode,
+                )
+                merged[key]["monitor_mode"] = merged_mode
+                merged[key]["include_replies"] = merged_mode != MONITOR_MODE_TWEETS
             return merged[key]
 
         def apply_platform(target: Dict[str, Any], platform: str, raw: Dict[str, Any] | None) -> None:
@@ -357,6 +364,7 @@ class RuntimeManager:
                 {
                     "username": target.username,
                     "enabled": target.enabled,
+                    "monitor_mode": target.monitor_mode,
                     "include_replies": target.include_replies,
                     "platforms": asdict(target)["platforms"],
                     "last_fetch_status": status,
